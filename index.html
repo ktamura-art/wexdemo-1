@@ -5,306 +5,398 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>新日本ウエックス様 SharePoint移管 設計デモ（v2.2 レベルサイト構成）</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif; }
-  body { background:#f5f6f8; color:#242424; font-size:14px; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif; font-size:14px; color:#323130; background:#faf9f8; }
+  button { font-family:inherit; }
+
+  /* ===== デモ操作バー（実画面には無い・説明用） ===== */
+  .demobar { background:#fff4ce; border-bottom:1px solid #f0e3ad; padding:5px 14px; font-size:12px; color:#605e5c; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .demobar b { color:#8a6d00; }
+  .demobar select { height:24px; font-size:12px; border:1px solid #d2c98f; border-radius:3px; background:#fffdf5; }
+  .demobar a { color:#0078d4; text-decoration:none; margin-left:auto; }
+
   /* ===== M365 スイートバー ===== */
-  .suitebar { background:#0b3d91; color:#fff; height:48px; display:flex; align-items:center; padding:0 16px; gap:14px; position:sticky; top:0; z-index:50; }
-  .waffle { display:grid; grid-template-columns:repeat(3,5px); grid-gap:3px; cursor:pointer; }
-  .waffle span { width:5px; height:5px; background:#fff; border-radius:1px; display:block; }
-  .suitebar .app { font-weight:600; font-size:15px; letter-spacing:.2px; }
-  .searchwrap { flex:1; max-width:560px; margin:0 auto; position:relative; }
-  .searchwrap input { width:100%; height:32px; border:none; border-radius:4px; padding:0 12px 0 34px; font-size:13px; background:#fff; }
-  .searchwrap::before { content:"🔍"; position:absolute; left:10px; top:6px; font-size:13px; opacity:.55; }
-  .persona { display:flex; align-items:center; gap:8px; font-size:12.5px; }
-  .persona select { height:30px; border-radius:4px; border:none; padding:0 8px; font-size:12.5px; background:#e9f1fa; color:#0b3d91; font-weight:600; }
-  .avatar { width:30px; height:30px; border-radius:50%; background:#e8590c; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; }
-  /* ===== バナー ===== */
-  .banner { background:#e9f1fa; border-bottom:1px solid #c9d4e4; padding:8px 20px; font-size:12.5px; color:#16337e; display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
-  .banner b { color:#0b3d91; }
-  .banner a { color:#2563eb; font-weight:600; text-decoration:none; margin-left:auto; }
-  /* ===== ハブナビ（サイト＝機密レベル） ===== */
-  .hubnav { background:#fff; border-bottom:1px solid #e1e4e8; display:flex; padding:0 16px; overflow-x:auto; }
-  .hub-item { padding:12px 14px; cursor:pointer; white-space:nowrap; font-size:13.5px; border-bottom:3px solid transparent; color:#444; display:flex; align-items:center; gap:6px; }
-  .hub-item:hover { background:#f3f6fb; }
-  .hub-item.active { border-bottom-color:#0b3d91; color:#0b3d91; font-weight:700; }
-  .hub-item.locked { color:#b0b6bf; cursor:not-allowed; }
-  .hub-item .lv { font-size:10.5px; padding:1px 7px; border-radius:9px; font-weight:700; }
-  /* レベル色 */
-  .lv-L1{background:#edf2fa;color:#2f5597}.lv-L2{background:#e9f4eb;color:#217a3c}.lv-L3{background:#fff5db;color:#8a6d00}
-  .lv-L4{background:#fdefe3;color:#c55a11}.lv-L5{background:#fce4e4;color:#c00000}
-  .lv-HUB{background:#e6e6e6;color:#555}.lv-EX{background:#eee;color:#777}
-  /* ===== レイアウト ===== */
-  .wrap { display:flex; min-height:calc(100vh - 140px); }
-  .side { width:280px; background:#fff; border-right:1px solid #e1e4e8; padding:14px 0; flex-shrink:0; }
-  .side h3 { font-size:11.5px; color:#8a8f98; padding:4px 18px 8px; text-transform:uppercase; letter-spacing:.4px; }
-  .lib { padding:9px 18px; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:13px; border-left:3px solid transparent; }
-  .lib:hover { background:#f3f6fb; }
-  .lib.active { background:#e9f1fa; border-left-color:#0b3d91; font-weight:700; color:#0b3d91; }
-  .lib .fcode { font-size:10px; color:#8a8f98; font-weight:600; min-width:30px; }
-  .lib.denied { color:#b8bdc6; cursor:not-allowed; }
-  .lib .cnt { margin-left:auto; font-size:11px; color:#9aa0a8; }
-  .main { flex:1; padding:18px 24px; overflow-x:auto; }
-  /* ライブラリヘッダ */
-  .libhead { background:#fff; border:1px solid #e1e4e8; border-radius:8px; padding:14px 18px; margin-bottom:14px; }
-  .libhead h2 { font-size:17px; color:#16337e; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  .badges { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
-  .badge { font-size:11px; padding:3px 9px; border-radius:10px; font-weight:600; }
-  .b-sg { background:#e9f1fa; color:#16337e; }
-  .b-cp-ok { background:#e9f4eb; color:#217a3c; }
-  .b-cp-ng { background:#fce4e4; color:#c00000; }
-  .b-meta { background:#f1f1f4; color:#555; }
-  /* フィルタバー */
-  .filters { display:flex; gap:10px; margin:0 0 12px; align-items:center; flex-wrap:wrap; }
-  .filters select { height:30px; border:1px solid #c9d4e4; border-radius:5px; padding:0 8px; font-size:12.5px; background:#fff; color:#333; }
-  .filters .hint { font-size:11.5px; color:#8a8f98; }
-  .chip { background:#0b3d91; color:#fff; font-size:11.5px; padding:3px 10px; border-radius:11px; display:inline-flex; gap:6px; align-items:center; }
-  .chip span{cursor:pointer;font-weight:700}
-  /* テーブル */
-  table { width:100%; border-collapse:collapse; background:#fff; border:1px solid #e1e4e8; border-radius:8px; overflow:hidden; }
-  th { background:#f7f8fa; text-align:left; font-size:11.5px; color:#666; padding:9px 12px; border-bottom:1px solid #e1e4e8; white-space:nowrap; }
-  td { padding:9px 12px; border-bottom:1px solid #eef0f2; font-size:13px; white-space:nowrap; }
-  tr:hover td { background:#f6f9fd; }
-  td .ico { margin-right:7px; }
-  .empty { padding:36px; text-align:center; color:#8a8f98; background:#fff; border:1px dashed #c9d4e4; border-radius:8px; font-size:13px; }
-  /* アクセス拒否 */
-  .denybox { background:#fff; border:1px solid #e1e4e8; border-radius:8px; padding:46px 30px; text-align:center; }
-  .denybox .big { font-size:42px; }
-  .denybox h2 { color:#444; margin:10px 0 6px; font-size:17px; }
-  .denybox p { color:#8a8f98; font-size:13px; line-height:1.7; }
-  .note { margin-top:14px; font-size:11.5px; color:#8a8f98; line-height:1.7; }
-  .site-desc{font-size:12.5px;color:#667085;margin-top:5px;line-height:1.6}
+  .suite { background:#000; height:48px; display:flex; align-items:center; color:#fff; padding:0 0 0 0; }
+  .waffle-btn { width:48px; height:48px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .waffle-btn:hover { background:#333; }
+  .waffle { display:grid; grid-template-columns:repeat(3,4px); grid-gap:4px; }
+  .waffle i { width:4px; height:4px; background:#fff; display:block; }
+  .suite .brand { font-size:16px; font-weight:600; padding:0 8px; letter-spacing:.2px; }
+  .suite-search { flex:1; display:flex; justify-content:center; }
+  .suite-search .box { width:min(560px,46vw); height:32px; background:#fff; border-radius:4px; display:flex; align-items:center; padding:0 8px; }
+  .suite-search input { flex:1; border:none; outline:none; font-size:13px; color:#323130; background:transparent; }
+  .suite-search .box span { color:#605e5c; font-size:13px; margin-right:6px; }
+  .suite-icons { display:flex; align-items:center; }
+  .suite-icons .ic { width:48px; height:48px; display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer; color:#fff; }
+  .suite-icons .ic:hover { background:#333; }
+  .me { width:28px; height:28px; border-radius:50%; background:#e8590c; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; margin:0 10px; }
+
+  /* ===== SharePoint アプリバー（左レール） ===== */
+  .layout { display:flex; min-height:calc(100vh - 48px); }
+  .appbar { width:48px; background:#f3f2f1; border-right:1px solid #edebe9; padding-top:8px; flex-shrink:0; }
+  .appbar .ab { width:48px; height:44px; display:flex; align-items:center; justify-content:center; font-size:17px; color:#605e5c; cursor:pointer; position:relative; }
+  .appbar .ab:hover { background:#e1dfdd; }
+  .appbar .ab.on { color:#0078d4; }
+  .appbar .ab.on::before { content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; background:#0078d4; border-radius:2px; }
+
+  .content { flex:1; min-width:0; }
+
+  /* ===== ハブナビ ===== */
+  .hubnav { background:#fff; border-bottom:1px solid #edebe9; display:flex; align-items:center; padding:0 20px; height:44px; overflow-x:auto; }
+  .hubnav .hubname { font-weight:600; font-size:13.5px; margin-right:18px; white-space:nowrap; color:#323130; display:flex; gap:8px; align-items:center; }
+  .hubnav .hubname .tile { width:22px; height:22px; background:#0b3d91; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; border-radius:2px; font-weight:700; }
+  .hublink { padding:12px 10px; font-size:13px; color:#323130; cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; }
+  .hublink:hover { color:#0078d4; }
+  .hublink.on { border-bottom-color:#0078d4; color:#0078d4; font-weight:600; }
+  .hublink.lock { color:#a19f9d; cursor:not-allowed; }
+
+  /* ===== サイトヘッダー ===== */
+  .sitehead { background:#fff; padding:14px 24px 0; border-bottom:1px solid #edebe9; }
+  .sh-row { display:flex; align-items:center; gap:14px; }
+  .sitetile { width:56px; height:56px; border-radius:3px; color:#fff; font-size:20px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .sh-title { font-size:20px; font-weight:700; color:#323130; }
+  .sh-sub { font-size:12px; color:#605e5c; margin-top:2px; display:flex; gap:14px; align-items:center; }
+  .followbtn { border:1px solid #8a8886; background:#fff; border-radius:2px; font-size:12px; padding:3px 10px; cursor:pointer; margin-left:auto; }
+  .members { font-size:12px; color:#605e5c; }
+  .sh-nav { display:flex; gap:2px; margin-top:10px; }
+  .sh-nav div { padding:8px 12px; font-size:13px; color:#323130; border-bottom:2px solid transparent; cursor:pointer; }
+  .sh-nav div.on { border-bottom-color:#0078d4; color:#0078d4; font-weight:600; }
+
+  /* ===== 本体（クイック起動＋ライブラリ） ===== */
+  .body2 { display:flex; }
+  .quick { width:220px; background:#faf9f8; border-right:1px solid #edebe9; padding:12px 0; flex-shrink:0; min-height:60vh; }
+  .quick .qi { padding:8px 20px; font-size:13.5px; color:#323130; cursor:pointer; display:flex; align-items:center; gap:8px; }
+  .quick .qi:hover { background:#f3f2f1; }
+  .quick .qi.on { background:#edebe9; font-weight:600; }
+  .quick .qi.lock { color:#a19f9d; }
+  .quick .qi .f { font-size:10px; color:#a19f9d; min-width:34px; font-weight:600; }
+  .quick hr { border:none; border-top:1px solid #edebe9; margin:8px 0; }
+  .quick .qh { font-size:11px; color:#a19f9d; padding:2px 20px 6px; }
+
+  .libarea { flex:1; min-width:0; padding:6px 26px 40px; background:#fff; }
+
+  /* コマンドバー */
+  .cmdbar { display:flex; align-items:center; height:44px; border-bottom:1px solid #edebe9; gap:2px; }
+  .cmd { display:flex; align-items:center; gap:6px; font-size:13.5px; padding:7px 10px; border-radius:2px; cursor:pointer; color:#323130; }
+  .cmd:hover { background:#f3f2f1; }
+  .cmd .i { color:#0078d4; font-size:14px; }
+  .cmd.primary { color:#0078d4; font-weight:600; }
+  .cmd .caret { font-size:9px; color:#605e5c; }
+  .cmd-r { margin-left:auto; display:flex; align-items:center; gap:2px; }
+
+  /* パンくず・タイトル */
+  .libtitle { font-size:17px; font-weight:700; padding:16px 0 6px; color:#323130; }
+
+  /* テーブル（ドキュメント ライブラリ） */
+  .doclist { width:100%; border-collapse:collapse; }
+  .doclist th { text-align:left; font-size:12px; font-weight:600; color:#605e5c; padding:8px 10px; border-bottom:1px solid #edebe9; white-space:nowrap; cursor:pointer; user-select:none; position:relative; }
+  .doclist th:hover { background:#f3f2f1; color:#323130; }
+  .doclist th .caret { font-size:9px; margin-left:4px; color:#a19f9d; }
+  .doclist td { padding:10px 10px; border-bottom:1px solid #f3f2f1; font-size:13.5px; white-space:nowrap; }
+  .doclist tr.row:hover td { background:#f3f2f1; }
+  .doclist .sel { width:34px; text-align:center; color:#a19f9d; }
+  .doclist tr.row:hover .sel::before { content:"◯"; font-size:12px; }
+  .fname { color:#323130; cursor:pointer; display:flex; align-items:center; gap:9px; }
+  .fname:hover { color:#0078d4; text-decoration:underline; }
+  .ficon { width:20px; height:20px; border-radius:2px; color:#fff; font-size:10.5px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .fx { background:#217346; } .fw { background:#2b579a; } .fp { background:#d24726; } .fpdf { background:#b30b00; } .fmp4 { background:#5c2d91; } .fzip { background:#797775; }
+  .pill { font-size:11px; padding:1px 8px; border-radius:9px; font-weight:600; }
+  .pl-L1{background:#edf2fa;color:#2f5597}.pl-L2{background:#e9f4eb;color:#217a3c}.pl-L3{background:#fff8e1;color:#8a6d00}
+  .pl-L4{background:#fdefe3;color:#c55a11}.pl-L5{background:#fce4e4;color:#c00000}.pl-X{background:#f3f2f1;color:#797775}
+  .muted { color:#605e5c; }
+
+  /* 列フィルタ ドロップダウン */
+  .colmenu { position:absolute; top:100%; left:0; background:#fff; border:1px solid #d2d0ce; box-shadow:0 6px 15px rgba(0,0,0,.13); z-index:30; min-width:190px; padding:6px 0; font-weight:400; }
+  .colmenu .cm { padding:7px 14px; font-size:13px; display:flex; gap:8px; align-items:center; color:#323130; }
+  .colmenu .cm:hover { background:#f3f2f1; }
+  .colmenu .sep { border-top:1px solid #edebe9; margin:5px 0; }
+
+  /* 詳細ペイン */
+  .infopane { width:320px; border-left:1px solid #edebe9; background:#fff; padding:18px; flex-shrink:0; display:none; }
+  .infopane.on { display:block; }
+  .infopane h3 { font-size:15px; margin-bottom:12px; }
+  .ip-row { font-size:12.5px; margin-bottom:10px; }
+  .ip-row .k { color:#605e5c; font-size:11.5px; }
+  .ip-row .v { margin-top:2px; }
+
+  /* アクセス拒否（SPO風） */
+  .denied { padding:70px 30px; text-align:center; }
+  .denied .lk { font-size:44px; }
+  .denied h2 { font-size:18px; margin:12px 0 8px; color:#323130; }
+  .denied p { font-size:13px; color:#605e5c; line-height:1.8; }
+  .denied .req { margin-top:16px; background:#0078d4; color:#fff; border:none; padding:8px 18px; border-radius:2px; font-size:13px; cursor:pointer; }
+
+  .footnote { font-size:11.5px; color:#a19f9d; padding:14px 2px; }
 </style>
 </head>
 <body>
 
-<!-- スイートバー -->
-<div class="suitebar">
-  <div class="waffle">.<span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-  <div class="app">SharePoint</div>
-  <div class="searchwrap"><input id="q" type="text" placeholder="このサイトを検索（ファイル名・F分類・部署で横断検索）" oninput="render()"></div>
-  <div class="persona">
-    表示ユーザー:
+<!-- デモ操作バー（実画面には存在しない） -->
+<div class="demobar">
+  <b>⚠ UIモック（デモ）</b>
+  <span>設計書v2.2のサイト構成をSharePoint実画面の見た目で再現したものです。実環境は8月の検証サイトでご確認いただけます。</span>
+  <span style="display:flex;align-items:center;gap:6px"><b>デモ操作＝表示ユーザー:</b>
     <select id="persona" onchange="onPersona()">
       <option value="L3">営業部・一般社員（〜L3）</option>
       <option value="L4">営業部・管理職（〜L4）</option>
       <option value="L5">役員・個別指定（〜L5）</option>
     </select>
-  </div>
-  <div class="avatar" id="avatar">社</div>
-</div>
-
-<!-- バナー -->
-<div class="banner">
-  <b>新日本ウエックス様　SharePoint移管 設計デモ</b>
-  <span>設計書v2.2準拠：<b>サイト＝機密レベル階層（L1〜L5）</b>／<b>ライブラリ＝用途（F分類対応）</b>／部署・年度＝メタデータ列</span>
+  </span>
   <a href="dashboard.html">▶ 安全・品質ダッシュボード（Power BI風デモ）</a>
 </div>
 
-<!-- ハブナビ＝サイト -->
-<div class="hubnav" id="hubnav"></div>
+<!-- M365 スイートバー -->
+<div class="suite">
+  <div class="waffle-btn"><div class="waffle"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+  <div class="brand">SharePoint</div>
+  <div class="suite-search"><div class="box"><span>🔍</span><input id="q" placeholder="このライブラリを検索" oninput="render()"></div></div>
+  <div class="suite-icons">
+    <div class="ic">⚙</div><div class="ic">？</div><div class="ic">🔔</div>
+    <div class="me" id="avatar">社</div>
+  </div>
+</div>
 
-<div class="wrap">
-  <div class="side" id="side"></div>
-  <div class="main" id="main"></div>
+<div class="layout">
+  <!-- SharePoint アプリバー -->
+  <div class="appbar">
+    <div class="ab on" title="ホーム">🏠</div>
+    <div class="ab" title="マイ サイト">🌐</div>
+    <div class="ab" title="マイ ニュース">📰</div>
+    <div class="ab" title="マイ ファイル">📄</div>
+    <div class="ab" title="リスト">📋</div>
+  </div>
+
+  <div class="content">
+    <!-- ハブナビ -->
+    <div class="hubnav" id="hubnav"></div>
+    <!-- サイトヘッダー -->
+    <div class="sitehead" id="sitehead"></div>
+    <!-- 本体 -->
+    <div class="body2">
+      <div class="quick" id="quick"></div>
+      <div class="libarea" id="libarea"></div>
+      <div class="infopane" id="infopane"></div>
+    </div>
+  </div>
 </div>
 
 <script>
-/* =========================================================
-   設計書 v2.2 の構成データ
-   サイト＝機密レベル / ライブラリ＝用途(F分類) / 部署・年度＝メタデータ
-========================================================= */
+/* ====== 設計書 v2.2 構成データ ====== */
 const SITES = [
-  { id:"hub",  lv:"HUB", name:"全社ポータルハブ", need:1, desc:"全サイトの入口・共通ナビ・横断検索。ここから各レベルサイトへ移動します。" },
-  { id:"l1",   lv:"L1",  name:"L1_公開情報", need:1, desc:"会社案内・採用情報など、世の中一般に出せる正本。" },
-  { id:"l2",   lv:"L2",  name:"L2_全社共有（社外秘）", need:1, desc:"規程・様式・通達＋部署間共有のL2層。社内全員が閲覧できます。" },
-  { id:"l3",   lv:"L3",  name:"L3_部署業務（既定）", need:1, desc:"既定の作業場所。用途ライブラリごとに主管部署のみ閲覧・編集（部外秘）。" },
-  { id:"l4",   lv:"L4",  name:"L4_管理職・特定者", need:2, desc:"管理職・担当者限定。汎用Copilot・全社検索の対象外。", cpng:true },
-  { id:"l5",   lv:"L5",  name:"L5_極秘（個別指定）", need:3, desc:"個別指定者のみ。対象外のユーザーには存在も見えません。", cpng:true },
-  { id:"poc",  lv:"EX",  name:"検証サイト群", need:1, desc:"AI研修連動の検証用（本番と分離・消えてよい前提）。" },
-  { id:"arc",  lv:"EX",  name:"アーカイブ", need:1, desc:"保存義務のみの過去文書。読み取り専用・検索/Copilot除外。" },
+  { id:"l1", lv:"L1", name:"L1_公開情報", color:"#2f5597", need:1, members:412,
+    desc:"会社案内・採用情報など一般公開できる正本" },
+  { id:"l2", lv:"L2", name:"L2_全社共有", color:"#217a3c", need:1, members:412,
+    desc:"規程・様式・通達（社外秘・社内全員閲覧）" },
+  { id:"l3", lv:"L3", name:"L3_部署業務", color:"#8a6d00", need:1, members:412,
+    desc:"既定の作業場所（部外秘・主管部署のみ）" },
+  { id:"l4", lv:"L4", name:"L4_管理職・特定者", color:"#c55a11", need:2, members:58,
+    desc:"管理職・担当者限定（秘密）" },
+  { id:"l5", lv:"L5", name:"L5_極秘", color:"#c00000", need:3, members:9,
+    desc:"個別指定（対象外には存在も見えない）" },
+  { id:"poc", lv:"X", name:"検証サイト群", color:"#797775", need:1, members:30, desc:"AI研修連動・検証用" },
+  { id:"arc", lv:"X", name:"アーカイブ", color:"#797775", need:1, members:412, desc:"保存義務のみ・読み取り専用" },
 ];
 
-/* ライブラリ: site, F分類コード, 名称, 主管(権限グループ), Copilot, 営業部員が主管か */
 const LIBS = [
-  // L2 全社共有
-  { site:"l2", f:"F13", name:"社内規程・様式・通達", sg:"SG-全社-閲覧（編集＝主管部署）", cp:"◎", mine:true },
-  { site:"l2", f:"—",   name:"部署間共有（L2）", sg:"SG-全社-閲覧", cp:"◎", mine:true },
-  // L3 用途ライブラリ（F分類対応）
-  { site:"l3", f:"F01", name:"経営・ガバナンス", sg:"SG-管理本部-L3", cp:"○", mine:false },
-  { site:"l3", f:"F02", name:"顧客管理・営業", sg:"SG-営業部-L3", cp:"○", mine:true },
-  { site:"l3", f:"F08", name:"リネンサプライ業務", sg:"SG-業務部-L3", cp:"○", mine:false },
-  { site:"l3", f:"F05/06", name:"生産・品質", sg:"SG-生産部-L3", cp:"◎", mine:false },
-  { site:"l3", f:"F04", name:"調達・購買", sg:"SG-購買室-L3", cp:"○", mine:false },
-  { site:"l3", f:"F14", name:"技術・研究開発", sg:"SG-技術部-L3", cp:"◎", mine:false },
-  { site:"l3", f:"F10", name:"財務・会計（会計期）", sg:"SG-経理-{事業会社}", cp:"△", mine:false },
-  { site:"l3", f:"F09", name:"人事・労務", sg:"SG-管理本部-L3", cp:"△", mine:false },
-  { site:"l3", f:"F12/13", name:"総務・施設・環境安全", sg:"SG-管理本部-L3", cp:"○", mine:false },
-  { site:"l3", f:"F11", name:"情報システム", sg:"SG-情シス-L3", cp:"△", mine:false },
-  { site:"l3", f:"F07", name:"物流・配送（サービス）", sg:"SG-サービス-L3", cp:"○", mine:false },
-  { site:"l3", f:"—",   name:"部署間共有（L3・主管承認）", sg:"主管部署が付与", cp:"△", mine:true },
-  // L4
-  { site:"l4", f:"—", name:"管理職（用途別）", sg:"SG-営業部-L4", cp:"×", mine:true },
-  { site:"l4", f:"F02", name:"単価・与信・価格交渉", sg:"SG-{部署}-L4限定", cp:"×", mine:true },
-  { site:"l4", f:"F05", name:"処方・基礎データ", sg:"SG-生産部-L4限定", cp:"×", mine:false },
-  { site:"l4", f:"F09", name:"人事評価・健診", sg:"SG-管理本部-L4限定", cp:"×", mine:false },
-  // L5
-  { site:"l5", f:"F09", name:"給与・役員報酬", sg:"個別指定のみ", cp:"×", mine:true },
-  { site:"l5", f:"F03", name:"訴訟・M&A", sg:"個別指定のみ", cp:"×", mine:true },
-  { site:"l5", f:"F07", name:"事故映像", sg:"個別指定のみ", cp:"×", mine:true },
-  // L1 / poc / arc
-  { site:"l1", f:"F13", name:"公開情報（会社案内・採用）", sg:"SG-全社-閲覧", cp:"◎", mine:true },
-  { site:"poc", f:"—", name:"poc-営業部（検証用）", sg:"検証メンバー", cp:"検証", mine:true },
-  { site:"arc", f:"—", name:"アーカイブ（部署別）", sg:"読み取り専用", cp:"×", mine:true },
+  { site:"l2", f:"F13", name:"社内規程・様式・通達", sg:"SG-全社-閲覧（編集＝主管部署）", cp:"対象（◎）", mine:true },
+  { site:"l2", f:"—", name:"部署間共有（L2）", sg:"SG-全社-閲覧", cp:"対象（◎）", mine:true },
+  { site:"l1", f:"F13", name:"公開情報（会社案内・採用）", sg:"SG-全社-閲覧", cp:"対象（◎）", mine:true },
+  { site:"l3", f:"F01", name:"経営・ガバナンス", sg:"SG-管理本部-L3", cp:"対象（○・権限内）", mine:false },
+  { site:"l3", f:"F02", name:"顧客管理・営業", sg:"SG-営業部-L3", cp:"対象（○・権限内）", mine:true },
+  { site:"l3", f:"F08", name:"リネンサプライ業務", sg:"SG-業務部-L3", cp:"対象（○・権限内）", mine:false },
+  { site:"l3", f:"F05/06", name:"生産・品質", sg:"SG-生産部-L3", cp:"対象（◎）", mine:false },
+  { site:"l3", f:"F04", name:"調達・購買", sg:"SG-購買室-L3", cp:"対象（○）", mine:false },
+  { site:"l3", f:"F14", name:"技術・研究開発", sg:"SG-技術部-L3", cp:"対象（◎）", mine:false },
+  { site:"l3", f:"F10", name:"財務・会計（会計期）", sg:"SG-経理-{事業会社}", cp:"対象（△・部門内）", mine:false },
+  { site:"l3", f:"F09", name:"人事・労務", sg:"SG-管理本部-L3", cp:"対象（△・部門内）", mine:false },
+  { site:"l3", f:"F12/13", name:"総務・施設・環境安全", sg:"SG-管理本部-L3", cp:"対象（○）", mine:false },
+  { site:"l3", f:"F11", name:"情報システム", sg:"SG-情シス-L3", cp:"対象（△）", mine:false },
+  { site:"l3", f:"F07", name:"物流・配送（サービス）", sg:"SG-サービス-L3", cp:"対象（○）", mine:false },
+  { site:"l3", f:"—", name:"部署間共有（L3・主管承認）", sg:"主管部署が付与", cp:"対象（△）", mine:true },
+  { site:"l4", f:"—", name:"管理職（用途別）", sg:"SG-営業部-L4", cp:"検索対象外（×）", mine:true },
+  { site:"l4", f:"F02", name:"単価・与信・価格交渉", sg:"SG-{部署}-L4限定", cp:"検索対象外（×）", mine:true },
+  { site:"l4", f:"F05", name:"処方・基礎データ", sg:"SG-生産部-L4限定", cp:"検索対象外（×）", mine:false },
+  { site:"l4", f:"F09", name:"人事評価・健診", sg:"SG-管理本部-L4限定", cp:"検索対象外（×）", mine:false },
+  { site:"l5", f:"F09", name:"給与・役員報酬", sg:"個別指定のみ", cp:"検索対象外（×）", mine:true },
+  { site:"l5", f:"F03", name:"訴訟・M&A", sg:"個別指定のみ", cp:"検索対象外（×）", mine:true },
+  { site:"l5", f:"F07", name:"事故映像", sg:"個別指定のみ", cp:"検索対象外（×）", mine:true },
+  { site:"poc", f:"—", name:"poc-営業部（検証用）", sg:"検証メンバー", cp:"検証用", mine:true },
+  { site:"arc", f:"—", name:"アーカイブ（部署別）", sg:"読み取り専用", cp:"検索対象外（×）", mine:true },
 ];
 
-/* サンプルファイル: lib名, ファイル名, F, レベル, 部署, 年度 */
+/* lib, name, icon, F, level, 部署, 年度, 更新者 */
 const FILES = [
-  ["社内規程・様式・通達","📕 就業規則・規程原本.pdf","F13","L2","管理本部","2026"],
-  ["社内規程・様式・通達","📄 20260401_稟議書フォーマット.docx","F13","L2","管理本部","2026"],
-  ["社内規程・様式・通達","📄 内線番号一覧.xlsx","F13","L2","管理本部","2026"],
-  ["部署間共有（L2）","📄 20260601_営業→生産_連携依頼シート.xlsx","F02","L2","営業部","2026"],
-  ["公開情報（会社案内・採用）","📘 会社案内2026.pdf","F13","L1","管理本部","2026"],
-  ["公開情報（会社案内・採用）","📘 採用情報_新卒パンフレット.pdf","F09","L1","管理本部","2026"],
-  ["経営・ガバナンス","📊 2026年度_部門方針.pptx","F01","L3","管理本部","2026"],
-  ["顧客管理・営業","📗 20260610_JWマリオットホテル東京_見積.xlsx","F02","L3","営業部","2026"],
-  ["顧客管理・営業","📗 20260615_OMO7横浜_受注書.xlsx","F02","L3","営業部","2026"],
-  ["顧客管理・営業","📄 20260620_ザセレスティン銀座_提案書.pptx","F02","L3","営業部","2026"],
-  ["顧客管理・営業","📗 2025年度_京都第1営業_エリア会議資料.xlsx","F02","L3","営業部","2025"],
-  ["リネンサプライ業務","📗 20260616_払出データ_加工前.xlsx","F08","L3","業務部","2026"],
-  ["リネンサプライ業務","📗 20260616_払出データ_加工後.xlsx","F08","L3","業務部","2026"],
-  ["生産・品質","📗 製品X_ロット2308_試験成績書.xlsx","F06","L3","技術部","2026"],
-  ["生産・品質","📗 2026W25_食品UF不良率_週次.xlsx","F06","L3","生産部","2026"],
-  ["生産・品質","📗 2026W25_仕上データ_福岡以外.xlsx","F05","L3","生産部","2026"],
-  ["調達・購買","📗 取引先リスト_リネン資材.xlsx","F04","L3","購買室","2026"],
-  ["技術・研究開発","📄 20260403_テーブル仕様書_M.docx","F14","L3","技術部","2026"],
-  ["財務・会計（会計期）","📗 202606_関東エリア_月次実績.xlsx","F10","L3","経理部","2026"],
-  ["人事・労務","📄 27卒_採用面接シート.docx","F09","L3","管理本部","2026"],
-  ["総務・施設・環境安全","📗 SDS一覧_2026.xlsx","F12","L3","管理本部","2026"],
-  ["情報システム","📄 kintone_操作手順書.pdf","F11","L3","情シス","2026"],
-  ["物流・配送（サービス）","📄 添乗指導チェックポイント_追突事故防止.docx","F07","L3","サービス","2026"],
-  ["部署間共有（L3・主管承認）","📗 20260618_営業⇔業務_共同編集シート.xlsx","F02","L3","営業部","2026"],
-  ["管理職（用途別）","📊 2026上期_エリア会議_予算実績.pptx","F02","L4","営業部","2026"],
-  ["単価・与信・価格交渉","📗 顧客別単価一覧_2026.xlsx","F02","L4","営業部","2026"],
-  ["単価・与信・価格交渉","📗 与信限度額管理表.xlsx","F02","L4","営業部","2026"],
-  ["処方・基礎データ","📗 処方マスタ_洗剤配合.xlsx","F05","L4","生産部","2026"],
-  ["人事評価・健診","📗 健康診断用名簿.xlsx","F09","L4","管理本部","2026"],
-  ["給与・役員報酬","📕 役員報酬の明細.xlsx","F09","L5","管理本部","2026"],
-  ["訴訟・M&A","📕 デューデリジェンス資料.pdf","F03","L5","管理本部","2026"],
-  ["事故映像","🎬 ドライブレコーダー記録_20260410.mp4","F07","L5","サービス","2026"],
-  ["poc-営業部（検証用）","📄 検証用サンプル_プロンプト集.docx","—","—","DX推進","2026"],
-  ["アーカイブ（部署別）","📦 2015年度_旧営業報告(読取専用).zip","F02","—","営業部","2015"],
+  ["社内規程・様式・通達","就業規則・規程原本.pdf","fpdf","F13","L2","管理本部","2026","津曲 雄治"],
+  ["社内規程・様式・通達","20260401_稟議書フォーマット.docx","fw","F13","L2","管理本部","2026","津曲 雄治"],
+  ["社内規程・様式・通達","内線番号一覧.xlsx","fx","F13","L2","管理本部","2026","総務 担当"],
+  ["部署間共有（L2）","20260601_営業→生産_連携依頼シート.xlsx","fx","F02","L2","営業部","2026","中道 一史"],
+  ["公開情報（会社案内・採用）","会社案内2026.pdf","fpdf","F13","L1","管理本部","2026","広報 担当"],
+  ["公開情報（会社案内・採用）","採用情報_新卒パンフレット.pdf","fpdf","F09","L1","管理本部","2026","採用 担当"],
+  ["経営・ガバナンス","2026年度_部門方針.pptx","fp","F01","L3","管理本部","2026","河合 一夫"],
+  ["顧客管理・営業","20260610_JWマリオットホテル東京_見積.xlsx","fx","F02","L3","営業部","2026","中道 一史"],
+  ["顧客管理・営業","20260615_OMO7横浜_受注書.xlsx","fx","F02","L3","営業部","2026","山崎 大介"],
+  ["顧客管理・営業","20260620_ザセレスティン銀座_提案書.pptx","fp","F02","L3","営業部","2026","鈴木 部長"],
+  ["顧客管理・営業","2025年度_京都第1営業_エリア会議資料.xlsx","fx","F02","L3","営業部","2025","京都 営業"],
+  ["リネンサプライ業務","20260616_払出データ_加工前.xlsx","fx","F08","L3","業務部","2026","水谷 部長"],
+  ["リネンサプライ業務","20260616_払出データ_加工後.xlsx","fx","F08","L3","業務部","2026","業務 担当"],
+  ["生産・品質","製品X_ロット2308_試験成績書.xlsx","fx","F06","L3","技術部","2026","品質 担当"],
+  ["生産・品質","2026W25_食品UF不良率_週次.xlsx","fx","F06","L3","生産部","2026","内田 課長"],
+  ["生産・品質","2026W25_仕上データ_福岡以外.xlsx","fx","F05","L3","生産部","2026","生産 担当"],
+  ["調達・購買","取引先リスト_リネン資材.xlsx","fx","F04","L3","購買室","2026","川瀬"],
+  ["技術・研究開発","20260403_テーブル仕様書_M.docx","fw","F14","L3","技術部","2026","上田 室長"],
+  ["財務・会計（会計期）","202606_関東エリア_月次実績.xlsx","fx","F10","L3","経理部","2026","安部 次長"],
+  ["人事・労務","27卒_採用面接シート.docx","fw","F09","L3","管理本部","2026","採用 担当"],
+  ["総務・施設・環境安全","SDS一覧_2026.xlsx","fx","F12","L3","管理本部","2026","総務 担当"],
+  ["情報システム","kintone_操作手順書.pdf","fpdf","F11","L3","情シス","2026","堀口 次長"],
+  ["物流・配送（サービス）","添乗指導チェックポイント_追突事故防止.docx","fw","F07","L3","サービス","2026","中垣内 部長"],
+  ["部署間共有（L3・主管承認）","20260618_営業⇔業務_共同編集シート.xlsx","fx","F02","L3","営業部","2026","中道 一史"],
+  ["管理職（用途別）","2026上期_エリア会議_予算実績.pptx","fp","F02","L4","営業部","2026","鈴木 部長"],
+  ["単価・与信・価格交渉","顧客別単価一覧_2026.xlsx","fx","F02","L4","営業部","2026","鈴木 部長"],
+  ["単価・与信・価格交渉","与信限度額管理表.xlsx","fx","F02","L4","営業部","2026","営業 管理職"],
+  ["処方・基礎データ","処方マスタ_洗剤配合.xlsx","fx","F05","L4","生産部","2026","処方 管理者"],
+  ["人事評価・健診","健康診断用名簿.xlsx","fx","F09","L4","管理本部","2026","人給 担当"],
+  ["給与・役員報酬","役員報酬の明細.xlsx","fx","F09","L5","管理本部","2026","（個別指定）"],
+  ["訴訟・M&A","デューデリジェンス資料.pdf","fpdf","F03","L5","管理本部","2026","（個別指定）"],
+  ["事故映像","ドライブレコーダー記録_20260410.mp4","fmp4","F07","L5","サービス","2026","（個別指定）"],
+  ["poc-営業部（検証用）","検証用サンプル_プロンプト集.docx","fw","—","—","DX推進","2026","田村 健人"],
+  ["アーカイブ（部署別）","2015年度_旧営業報告.zip","fzip","F02","—","営業部","2015","—"],
 ];
 
-const PERSONA = { L3:{need:1, av:"社"}, L4:{need:2, av:"管"}, L5:{need:3, av:"役"} };
-let curSite = "l3", curLib = "顧客管理・営業";
+const PERSONA = { L3:{need:1,av:"社"}, L4:{need:2,av:"管"}, L5:{need:3,av:"役"} };
+let curSite="l3", curLib="顧客管理・営業", fF="", fY="", openMenu="", infoOpen=false;
 
-function personaLevel(){ return PERSONA[document.getElementById("persona").value].need; }
-
+const lvl = () => PERSONA[document.getElementById("persona").value].need;
 function onPersona(){
   document.getElementById("avatar").textContent = PERSONA[document.getElementById("persona").value].av;
   const s = SITES.find(x=>x.id===curSite);
-  if(s && s.need > personaLevel()){ curSite="l3"; curLib="顧客管理・営業"; }
+  if(s && s.need>lvl()){ curSite="l3"; curLib="顧客管理・営業"; }
   render();
 }
-
-function canSeeLib(l){
-  // L3の部外秘：主管部署（営業部ペルソナ）以外はロック。L4/L5相当のペルソナは説明用に閲覧可とする
-  if(l.site==="l3" && !l.mine && personaLevel()<2) return false;
-  return true;
-}
+const canSee = l => !(l.site==="l3" && !l.mine && lvl()<2);
 
 function render(){
-  const lvl = personaLevel();
+  const L = lvl();
   /* ハブナビ */
-  const hub = document.getElementById("hubnav");
-  hub.innerHTML = SITES.map(s=>{
-    const locked = s.need > lvl;
-    if(s.id==="l5" && locked) return "";  // L5は権限が無ければ「存在も見えない」
-    return `<div class="hub-item ${s.id===curSite?"active":""} ${locked?"locked":""}"
-      onclick="${locked?"":`selSite('${s.id}')`}" title="${locked?"アクセス権がありません":s.desc}">
-      <span class="lv lv-${s.lv}">${s.lv==="HUB"?"HUB":s.lv==="EX"?"–":s.lv}</span>${s.name}${locked?" 🔒":""}</div>`;
-  }).join("");
+  document.getElementById("hubnav").innerHTML =
+    `<div class="hubname"><span class="tile">WX</span>新日本ウエックス ポータル</div>` +
+    SITES.map(s=>{
+      const lock = s.need>L;
+      if(s.id==="l5" && lock) return "";               // L5: 権限が無ければ存在も見えない
+      return `<div class="hublink ${s.id===curSite?"on":""} ${lock?"lock":""}"
+        onclick="${lock?"":`selSite('${s.id}')`}" title="${lock?"アクセス許可がありません":s.desc}">${s.name}${lock?" 🔒":""}</div>`;
+    }).join("");
 
-  /* サイドバー（ライブラリ一覧） */
-  const side = document.getElementById("side");
-  const libs = LIBS.filter(l=>l.site===curSite);
   const site = SITES.find(s=>s.id===curSite);
-  if(curSite==="hub"){
-    side.innerHTML = `<h3>サイト一覧（機密レベル階層）</h3>` + SITES.filter(s=>s.id!=="hub").map(s=>{
-      const locked = s.need>lvl;
-      if(s.id==="l5" && locked) return "";
-      return `<div class="lib ${locked?"denied":""}" onclick="${locked?"":`selSite('${s.id}')`}">
-        <span class="fcode lv lv-${s.lv}">${s.lv==="EX"?"–":s.lv}</span>${s.name}${locked?" 🔒":""}</div>`;
-    }).join("");
-  } else {
-    side.innerHTML = `<h3>${site.name} のライブラリ（用途＝F分類）</h3>` + libs.map(l=>{
-      const ok = canSeeLib(l);
-      const cnt = FILES.filter(f=>f[0]===l.name).length;
-      return `<div class="lib ${l.name===curLib&&ok?"active":""} ${ok?"":"denied"}"
-        onclick="${ok?`selLib('${l.name}')`:""}" title="${ok?l.sg:"権限なし（主管部署のみ）"}">
-        <span class="fcode">${l.f}</span>${l.name}${ok?"":" 🔒"}<span class="cnt">${ok?cnt:""}</span></div>`;
-    }).join("");
-  }
+  /* サイトヘッダー */
+  document.getElementById("sitehead").innerHTML = `
+    <div class="sh-row">
+      <div class="sitetile" style="background:${site.color}">${site.lv==="X"?"AR":site.lv}</div>
+      <div>
+        <div class="sh-title">${site.name}</div>
+        <div class="sh-sub"><span>チーム サイト</span><span>${site.desc}</span></div>
+      </div>
+      <button class="followbtn">☆ フォロー</button>
+      <span class="members" style="margin-left:14px">👥 メンバー ${site.members}人</span>
+    </div>
+    <div class="sh-nav"><div class="on">ホーム</div><div>ドキュメント</div><div>ページ</div><div>サイト コンテンツ</div></div>`;
 
-  /* メイン */
-  const main = document.getElementById("main");
-  if(curSite==="hub"){
-    main.innerHTML = `<div class="libhead"><h2>🏠 全社ポータルハブ</h2>
-      <div class="site-desc">サイト＝機密レベル（L1公開／L2全社共有／L3部署業務＝既定／L4管理職・特定者／L5極秘）。<br>
-      迷った文書は<b>L3</b>へ。「見せたくない→レベルを上げる／全社に見せたい→下げる」で振り分けます（設計書 J-19〜J-25）。<br>
-      右上の<b>表示ユーザーを切り替える</b>と、権限によって見えるサイト・ライブラリが変わります（Copilotもこの権限に準拠します）。</div></div>
-      <div class="note">※ 本デモはUIモックです（実データなし・サンプルファイル名は棚卸し資料に基づくダミー）。</div>`;
-    return;
+  /* クイック起動 */
+  const libs = LIBS.filter(l=>l.site===curSite);
+  document.getElementById("quick").innerHTML =
+    `<div class="qh">ドキュメント ライブラリ（用途＝F分類）</div>` +
+    libs.map(l=>{
+      const ok = canSee(l);
+      return `<div class="qi ${l.name===curLib&&ok?"on":""} ${ok?"":"lock"}"
+        onclick="${ok?`selLib('${l.name}')`:""}" title="${ok?l.sg:"アクセス許可がありません（主管部署のみ）"}">
+        <span class="f">${l.f}</span>${l.name}${ok?"":" 🔒"}</div>`;
+    }).join("") +
+    `<hr><div class="qi">ごみ箱</div><div class="qi">サイト コンテンツ</div>`;
+
+  /* ライブラリ本体 */
+  const main = document.getElementById("libarea");
+  const lib = libs.find(l=>l.name===curLib && canSee(l)) || libs.find(canSee);
+  if(!lib){
+    main.innerHTML = `<div class="denied"><div class="lk">🔒</div>
+      <h2>アクセス許可が必要です</h2>
+      <p>このサイトのコンテンツは主管部署・特定のメンバーのみに公開されています。<br>
+      アクセスが必要な場合は、所有者に許可を要求してください。</p>
+      <button class="req">アクセス許可を要求</button></div>`;
+    document.getElementById("infopane").className="infopane"; return;
   }
-  const lib = libs.find(l=>l.name===curLib && canSeeLib(l)) || libs.find(l=>canSeeLib(l));
-  if(!lib){ main.innerHTML = `<div class="denybox"><div class="big">🔒</div><h2>アクセス権がありません</h2>
-    <p>このサイトのライブラリは主管部署・特定者のみに公開されています。<br>必要な場合は「レベルを下げる」か、主管部署に共有を申請します。</p></div>`; return; }
   curLib = lib.name;
 
-  const q = document.getElementById("q").value.trim();
-  const ff = document.getElementById("f_f") ? document.getElementById("f_f").value : "";
-  const fy = document.getElementById("f_y") ? document.getElementById("f_y").value : "";
+  const q = document.getElementById("q").value.trim().toLowerCase();
   let rows = FILES.filter(f=>f[0]===lib.name);
-  const all = rows.length;
-  if(ff) rows = rows.filter(f=>f[2].includes(ff));
-  if(fy) rows = rows.filter(f=>f[5]===fy);
-  if(q) rows = rows.filter(f=>(f[1]+f[2]+f[4]).toLowerCase().includes(q.toLowerCase()));
+  const fvals = [...new Set(rows.map(f=>f[3]))], yvals=[...new Set(rows.map(f=>f[6]))];
+  if(fF) rows = rows.filter(f=>f[3]===fF);
+  if(fY) rows = rows.filter(f=>f[6]===fY);
+  if(q) rows = rows.filter(f=>(f[1]+f[3]+f[5]).toLowerCase().includes(q));
 
-  const cpBadge = lib.cp==="×" ? `<span class="badge b-cp-ng">Copilot・全社検索の対象外</span>`
-                : `<span class="badge b-cp-ok">Copilotナレッジ ${lib.cp}（利用者の権限内のみ参照）</span>`;
   main.innerHTML = `
-    <div class="libhead">
-      <h2>📁 ${lib.name} <span class="lv lv-${site.lv}" style="font-size:11px;padding:2px 9px;border-radius:10px">${site.lv}</span></h2>
-      <div class="badges">
-        <span class="badge b-sg">権限グループ：${lib.sg}</span>
-        <span class="badge b-meta">F分類：${lib.f}</span>
-        ${cpBadge}
-        <span class="badge b-meta">フォルダ3階層以内・部署/年度はメタデータ列</span>
+    <div class="cmdbar">
+      <div class="cmd primary"><span class="i">＋</span>新規 <span class="caret">▼</span></div>
+      <div class="cmd"><span class="i">↑</span>アップロード <span class="caret">▼</span></div>
+      <div class="cmd"><span class="i">⇄</span>同期</div>
+      <div class="cmd"><span class="i">⤓</span>ダウンロード</div>
+      <div class="cmd"><span class="i">⚡</span>自動化 <span class="caret">▼</span></div>
+      <div class="cmd">…</div>
+      <div class="cmd-r">
+        <div class="cmd">＝ すべてのドキュメント <span class="caret">▼</span></div>
+        <div class="cmd" onclick="toggleInfo()" title="詳細ウィンドウ"><span class="i">ⓘ</span></div>
       </div>
     </div>
-    <div class="filters">
-      <select id="f_f" onchange="render()">
-        <option value="">F分類：すべて</option>
-        ${[...new Set(FILES.filter(f=>f[0]===lib.name).map(f=>f[2]))].map(v=>`<option ${v===ff?"selected":""}>${v}</option>`).join("")}
-      </select>
-      <select id="f_y" onchange="render()">
-        <option value="">年度：すべて</option>
-        ${[...new Set(FILES.filter(f=>f[0]===lib.name).map(f=>f[5]))].map(v=>`<option ${v===fy?"selected":""}>${v}</option>`).join("")}
-      </select>
-      ${ (ff||fy||q) ? `<span class="chip">絞り込み中 ${rows.length}/${all}件 <span onclick="clearF()">✕</span></span>` : `<span class="hint">← メタデータ（F分類・年度）でフォルダを掘らずに絞り込み</span>` }
-    </div>
-    ${ rows.length ? `<table>
-      <tr><th>名前</th><th>F分類</th><th>機密レベル</th><th>主管部署</th><th>年度</th><th>更新日</th></tr>
-      ${rows.map(f=>`<tr><td>${f[1]}</td><td><b>${f[2]}</b></td>
-        <td><span class="lv lv-${f[3]==="—"?"EX":f[3]}" style="font-size:10.5px;padding:1px 8px;border-radius:9px">${f[3]}</span></td>
-        <td>${f[4]}</td><td>${f[5]}</td><td>2026/07/17</td></tr>`).join("")}
-    </table>` : `<div class="empty">条件に一致するファイルがありません</div>` }
-    <div class="note">※ 設計書v2.2準拠のUIモック（サンプルデータ）。列（F分類・機密レベル・部署・年度）が検索・絞り込み・Copilot出典確認の軸になります。</div>`;
+    <div class="libtitle">${lib.name}</div>
+    ${(fF||fY)?`<div style="font-size:12px;color:#0078d4;padding-bottom:8px">フィルター適用中：${fF?`F分類=${fF} `:""}${fY?`年度=${fY}`:""} <span style="cursor:pointer" onclick="fF='';fY='';render()">✕ クリア</span></div>`:""}
+    ${rows.length?`
+    <table class="doclist">
+      <tr>
+        <th class="sel"></th>
+        <th onclick="menu('name')">名前 <span class="caret">▼</span></th>
+        <th onclick="menu('f')" style="position:relative">F分類 <span class="caret">▼</span>
+          ${openMenu==="f"?`<div class="colmenu">
+            <div class="cm muted">フィルター</div><div class="sep"></div>
+            <div class="cm" onclick="setF('');event.stopPropagation()">（すべて）</div>
+            ${fvals.map(v=>`<div class="cm" onclick="setF('${v}');event.stopPropagation()">${v===fF?"✓":"　"} ${v}</div>`).join("")}
+          </div>`:""}</th>
+        <th>機密レベル</th>
+        <th>主管部署</th>
+        <th onclick="menu('y')" style="position:relative">年度 <span class="caret">▼</span>
+          ${openMenu==="y"?`<div class="colmenu">
+            <div class="cm muted">フィルター</div><div class="sep"></div>
+            <div class="cm" onclick="setY('');event.stopPropagation()">（すべて）</div>
+            ${yvals.map(v=>`<div class="cm" onclick="setY('${v}');event.stopPropagation()">${v===fY?"✓":"　"} ${v}</div>`).join("")}
+          </div>`:""}</th>
+        <th>更新日時</th><th>更新者</th><th style="color:#0078d4">＋ 列の追加</th>
+      </tr>
+      ${rows.map(f=>`<tr class="row">
+        <td class="sel"></td>
+        <td><span class="fname"><span class="ficon ${f[2]}">${{fx:"X",fw:"W",fp:"P",fpdf:"PDF",fmp4:"▶",fzip:"ZIP"}[f[2]]}</span>${f[1]}</span></td>
+        <td><b>${f[3]}</b></td>
+        <td><span class="pill pl-${f[4]==="—"?"X":f[4]}">${f[4]}</span></td>
+        <td class="muted">${f[5]}</td><td class="muted">${f[6]}</td>
+        <td class="muted">7月17日</td><td class="muted">${f[7]}</td><td></td>
+      </tr>`).join("")}
+    </table>`:`<div style="padding:40px;text-align:center;color:#a19f9d;font-size:13px">条件に一致するアイテムはありません</div>`}
+    <div class="footnote">※ UIモック（設計書v2.2準拠・サンプルデータ）。F分類・年度の列ヘッダー「▼」からフィルターを試せます。実環境は8月の検証サイトで構築します。</div>`;
+
+  /* 詳細ペイン */
+  const ip = document.getElementById("infopane");
+  ip.className = "infopane" + (infoOpen?" on":"");
+  ip.innerHTML = `<h3>${lib.name}</h3>
+    <div class="ip-row"><div class="k">権限（設計書シート6）</div><div class="v">${lib.sg}</div></div>
+    <div class="ip-row"><div class="k">F分類（メタデータ主軸）</div><div class="v">${lib.f}</div></div>
+    <div class="ip-row"><div class="k">Copilot／全社検索</div><div class="v">${lib.cp}</div></div>
+    <div class="ip-row"><div class="k">機密レベル（サイト）</div><div class="v">${site.lv}：${site.desc}</div></div>
+    <div class="ip-row"><div class="k">設計原則</div><div class="v">既定=L3／見せたくない→上げる／フォルダー権限は不可（J-19〜J-21）</div></div>`;
 }
 
-function selSite(id){ curSite=id; const first=LIBS.find(l=>l.site===id && canSeeLib(l)); curLib=first?first.name:""; clearF(false); render(); }
-function selLib(name){ curLib=name; clearF(false); render(); }
-function clearF(doRender=true){ const a=document.getElementById("f_f"),b=document.getElementById("f_y"); if(a)a.value=""; if(b)b.value=""; document.getElementById("q").value=""; if(doRender)render(); }
+function selSite(id){ curSite=id; const f=LIBS.find(l=>l.site===id&&canSee(l)); curLib=f?f.name:""; fF="";fY="";openMenu=""; document.getElementById("q").value=""; render(); }
+function selLib(n){ curLib=n; fF="";fY="";openMenu=""; render(); }
+function menu(m){ openMenu = openMenu===m?"":m; render(); }
+function setF(v){ fF=v; openMenu=""; render(); }
+function setY(v){ fY=v; openMenu=""; render(); }
+function toggleInfo(){ infoOpen=!infoOpen; render(); }
+document.addEventListener("click", e=>{ if(!e.target.closest("th") && openMenu){ openMenu=""; render(); } });
 
 render();
 </script>
