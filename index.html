@@ -48,7 +48,6 @@
   .hublink { padding:12px 10px; font-size:13px; color:#323130; cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; }
   .hublink:hover { color:#0078d4; }
   .hublink.on { border-bottom-color:#0078d4; color:#0078d4; font-weight:600; }
-  .hublink.lock { color:#a19f9d; cursor:not-allowed; }
 
   /* ===== サイトヘッダー ===== */
   .sitehead { background:#fff; padding:14px 24px 0; border-bottom:1px solid #edebe9; }
@@ -68,7 +67,6 @@
   .quick .qi { padding:8px 20px; font-size:13.5px; color:#323130; cursor:pointer; display:flex; align-items:center; gap:8px; }
   .quick .qi:hover { background:#f3f2f1; }
   .quick .qi.on { background:#edebe9; font-weight:600; }
-  .quick .qi.lock { color:#a19f9d; }
   .quick .qi .f { font-size:10px; color:#a19f9d; min-width:34px; font-weight:600; }
   .quick hr { border:none; border-top:1px solid #edebe9; margin:8px 0; }
   .quick .qh { font-size:11px; color:#a19f9d; padding:2px 20px 6px; }
@@ -134,7 +132,7 @@
 <!-- デモ操作バー（実画面には存在しない） -->
 <div class="demobar">
   <b>⚠ UIモック（デモ）</b>
-  <span>設計書v2.2のサイト構成をSharePoint実画面の見た目で再現したものです。実環境は8月の検証サイトでご確認いただけます。</span>
+  <span>設計書v2.2のサイト構成をSharePoint実画面の見た目で再現したものです。権限のないサイト・ライブラリは本番同様リンクごと表示されません（表示ユーザーを切り替えると出現します）。実環境は8月の検証サイトでご確認いただけます。</span>
   <span style="display:flex;align-items:center;gap:6px"><b>デモ操作＝表示ユーザー:</b>
     <select id="persona" onchange="onPersona()">
       <option value="L3">営業部・一般社員（〜L3）</option>
@@ -279,10 +277,9 @@ function render(){
   document.getElementById("hubnav").innerHTML =
     `<div class="hubname"><span class="tile">WX</span>新日本ウエックス ポータル</div>` +
     SITES.map(s=>{
-      const lock = s.need>L;
-      if(s.id==="l5" && lock) return "";               // L5: 権限が無ければ存在も見えない
-      return `<div class="hublink ${s.id===curSite?"on":""} ${lock?"lock":""}"
-        onclick="${lock?"":`selSite('${s.id}')`}" title="${lock?"アクセス許可がありません":s.desc}">${s.name}${lock?" 🔒":""}</div>`;
+      if(s.need>L) return "";  // 権限が無いサイトはリンクごと非表示（本番＝ナビの対象ユーザー設定と同じ挙動）
+      return `<div class="hublink ${s.id===curSite?"on":""}"
+        onclick="selSite('${s.id}')" title="${s.desc}">${s.name}</div>`;
     }).join("");
 
   const site = SITES.find(s=>s.id===curSite);
@@ -303,12 +300,11 @@ function render(){
   const libs = LIBS.filter(l=>l.site===curSite);
   document.getElementById("quick").innerHTML =
     `<div class="qh">ドキュメント ライブラリ（用途＝F分類）</div>` +
-    libs.map(l=>{
-      const ok = canSee(l);
-      return `<div class="qi ${l.name===curLib&&ok?"on":""} ${ok?"":"lock"}"
-        onclick="${ok?`selLib('${l.name}')`:""}" title="${ok?l.sg:"アクセス許可がありません（主管部署のみ）"}">
-        <span class="f">${l.f}</span>${l.name}${ok?"":" 🔒"}</div>`;
-    }).join("") +
+    libs.filter(canSee).map(l=>  // 権限が無いライブラリはリンクごと非表示（本番＝対象ユーザー設定と同じ挙動）
+      `<div class="qi ${l.name===curLib?"on":""}"
+        onclick="selLib('${l.name}')" title="${l.sg}">
+        <span class="f">${l.f}</span>${l.name}</div>`
+    ).join("") +
     `<hr><div class="qi">ごみ箱</div><div class="qi">サイト コンテンツ</div>`;
 
   /* ライブラリ本体 */
@@ -316,10 +312,10 @@ function render(){
   const lib = libs.find(l=>l.name===curLib && canSee(l)) || libs.find(canSee);
   if(!lib){
     main.innerHTML = `<div class="denied"><div class="lk">🔒</div>
-      <h2>アクセス許可が必要です</h2>
-      <p>このサイトのコンテンツは主管部署・特定のメンバーのみに公開されています。<br>
-      アクセスが必要な場合は、所有者に許可を要求してください。</p>
-      <button class="req">アクセス許可を要求</button></div>`;
+      <h2>このサイトへのアクセス許可が必要です</h2>
+      <p>現在のアクセス許可では、このコンテンツを表示できません。<br>
+      アクセスが必要な場合は、サイトの所有者に要求を送信してください。</p>
+      <button class="req">アクセスの要求を送信</button></div>`;
     document.getElementById("infopane").className="infopane"; return;
   }
   curLib = lib.name;
