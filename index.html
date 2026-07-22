@@ -349,17 +349,18 @@ const FILES = [
   ["arc","main","2015年度_旧営業報告.zip","fzip","F02","—","営業部","2015","—"],
 ];
 
-/* ペルソナ：所属＝営業部（購買兼任）。mgr=管理職、exec=役員・個別指定 */
+/* ペルソナ：ALL=全社管理者（全表示・構造レビュー用）。L3〜L5＝営業部（購買兼任）。mgr=管理職、exec=全表示 */
 const PERSONA = {
-  L3:{ dept:"営業部", kobai:true,  mgr:false, exec:false, av:"社" },
-  L4:{ dept:"営業部", kobai:true,  mgr:true,  exec:false, av:"管" },
-  L5:{ dept:"営業部", kobai:true,  mgr:true,  exec:true,  av:"役" },
+  ALL:{ dept:"（全社管理者）", kobai:true, mgr:true, exec:true, av:"全", label:"全社管理者（全部署を表示）" },
+  L3:{ dept:"営業部", kobai:true,  mgr:false, exec:false, av:"社", label:"営業部・一般社員（購買兼任）" },
+  L4:{ dept:"営業部", kobai:true,  mgr:true,  exec:false, av:"管", label:"営業部・管理職" },
+  L5:{ dept:"営業部", kobai:true,  mgr:true,  exec:true,  av:"役", label:"役員・個別指定" },
 };
 let curSite="sales", curLib="sales0", fF="", fY="", openMenu="", infoOpen=false;
 
-/* 表示ユーザー：URLの ?user=L3|L4|L5 で指定。右上アバターのクリックで切替 */
-let curPersona = (new URLSearchParams(location.search).get("user")||"L3").toUpperCase();
-if(!PERSONA[curPersona]) curPersona = "L3";
+/* 表示ユーザー：URLの ?user=ALL|L3|L4|L5 で指定。既定＝全社管理者（全部署の構造が見える）。右上アバターのクリックで切替 */
+let curPersona = (new URLSearchParams(location.search).get("user")||"ALL").toUpperCase();
+if(!PERSONA[curPersona]) curPersona = "ALL";
 const me = () => PERSONA[curPersona];
 const isMySite = s => s.dept===me().dept || (s.kobai && me().kobai);
 
@@ -393,7 +394,8 @@ function cyclePersona(){
   onPersona();
 }
 function onPersona(){
-  document.getElementById("avatar").textContent = me().av;
+  const a = document.getElementById("avatar");
+  a.textContent = me().av; a.title = "表示ユーザー："+me().label+"（クリックで切替）";
   const s = SITES.find(x=>x.id===curSite);
   if(!s || !siteVisible(s)){ curSite="sales"; curLib=""; }
   render();
@@ -524,8 +526,7 @@ function setY(v){ fY=v; openMenu=""; render(); }
 function toggleInfo(){ infoOpen=!infoOpen; render(); }
 document.addEventListener("click", e=>{ if(!e.target.closest("th") && openMenu){ openMenu=""; render(); } });
 
-document.getElementById("avatar").textContent = me().av;
-render();
+onPersona();
 </script>
 </body>
 </html>
