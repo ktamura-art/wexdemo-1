@@ -167,9 +167,11 @@ const SITES = [
   { id:"sales", short:"営", name:"顧客管理・営業",   color:"#0078d4", dept:"営業部",   members:74, desc:"顧客・見積・提案・営業報告" },
   { id:"linen", short:"リ", name:"リネンサプライ",   color:"#038387", dept:"業務部",   members:52, desc:"受注・発注・加工・入荷" },
   { id:"prod",  short:"生", name:"生産・品質",       color:"#217346", dept:"生産部",   members:88, desc:"生産計画・実績・改善・クレーム" },
+  { id:"iso",   short:"ISO",name:"ISO・認証管理",    color:"#00838f", dept:"ISO管理室", members:8, desc:"基準・ルール・教育訓練・認証" },
   { id:"proc",  short:"調", name:"調達・購買",       color:"#ca5010", dept:"購買",     members:41, kobai:true,
     desc:"取引先別×5分類（★購買兼任メンバー横串）" },
-  { id:"rnd",   short:"技", name:"技術・研究開発",   color:"#8764b8", dept:"技術部",   members:23, desc:"クレーム・開発・ISO" },
+  { id:"wps",   short:"改", name:"WPS推進（改善活動）", color:"#7a7574", dept:"WPS推進室", members:7, desc:"改善活動・購買" },
+  { id:"rnd",   short:"技", name:"技術・研究開発",   color:"#8764b8", dept:"技術部",   members:23, desc:"クレーム・開発・テーブル仕様" },
   { id:"fin",   short:"財", name:"財務・会計",       color:"#986f0b", dept:"経理部",   members:18, desc:"会計期別・監査" },
   { id:"hr",    short:"人", name:"人事・労務",       color:"#d13438", dept:"管理本部", members:21, desc:"採用・教育・勤怠" },
   { id:"ga",    short:"総", name:"総務・施設",       color:"#498205", dept:"管理本部", members:19, desc:"施設・保険・SDS・安全衛生" },
@@ -223,9 +225,18 @@ const FILES = [
   ["prod","l3","2026W25_仕上データ_福岡以外.xlsx","fx","F05","L3","生産部","2026","生産 担当"],
   ["prod","l4","処方マスタ_洗剤配合.xlsx","fx","F05","L4","生産部","2026","処方 管理者"],
 
+  ["iso","l3","ISO9001_品質マニュアル_rev12.docx","fw","F14","L3","ISO管理室","2026","ISO 担当"],
+  ["iso","l3","20260410_技能実習評価試験_記録.xlsx","fx","F14","L3","ISO管理室","2026","ISO 担当"],
+  ["iso","l4","RAL規格_認証取得計画.xlsx","fx","F14","L4","ISO管理室","2026","ISO 室長"],
+  ["iso","l4","2026_審査費用_予算.xlsx","fx","F14","L4","ISO管理室","2026","ISO 室長"],
+
   ["proc","l2","購買申請の手引き.pdf","fpdf","F04","L2","購買","2026","川瀬"],
   ["proc","l3","取引先リスト_リネン資材.xlsx","fx","F04","L3","購買","2026","川瀬"],
   ["proc","l4","仕入価格交渉_2026下期方針.xlsx","fx","F04","L4","購買","2026","購買 管理職"],
+
+  ["wps","l3","20260605_仕入支払_請求書控え.xlsx","fx","F04","L3","WPS推進室","2026","WPS 担当"],
+  ["wps","l3","20260610_注文書_○○設備.pdf","fpdf","F04","L3","WPS推進室","2026","WPS 担当"],
+  ["wps","l4","設備投資_見積比較.xlsx","fx","F04","L4","WPS推進室","2026","WPS 室長"],
 
   ["rnd","l2","技術ニュースレター_2026夏号.pdf","fpdf","F14","L2","技術部","2026","上田 室長"],
   ["rnd","l3","20260403_テーブル仕様書_M.docx","fw","F14","L3","技術部","2026","上田 室長"],
@@ -248,6 +259,7 @@ const FILES = [
   ["svc","l3","添乗指導チェックポイント_追突事故防止.docx","fw","F07","L3","サービス部","2026","中垣内 部長"],
   ["svc","l4","エリア会議_予算・稼働率.xlsx","fx","F07","L4","サービス部","2026","サービス 管理職"],
 
+  ["l5","l5","生産部_業務報告書_2026上期.xlsx","fx","F06","L5","生産部","2026","（個別指定）"],
   ["l5","l5","役員報酬の明細.xlsx","fx","F09","L5","管理本部","2026","（個別指定）"],
   ["l5","l5","デューデリジェンス資料.pdf","fpdf","F03","L5","管理本部","2026","（個別指定）"],
   ["l5","l5","ドライブレコーダー記録_20260410.mp4","fmp4","F07","L5","サービス","2026","（個別指定）"],
@@ -255,6 +267,25 @@ const FILES = [
   ["poc","main","検証用サンプル_プロンプト集.docx","fw","—","—","DX推進","2026","田村 健人"],
   ["arc","main","2015年度_旧営業報告.zip","fzip","F02","—","営業部","2015","—"],
 ];
+
+/* 各L3/L4ライブラリのフォルダ第1階層＝各部署ヒアリングの業務分類（設計書シート4b） */
+const FOLDERS = {
+  sales:{ l3:["顧客管理","新規","受発注","管理業務"], l4:["管理業務（会議・更新・予算）","新規開発室"] },
+  prod: { l3:["生産計画","生産実績","能力・負荷管理","購買業務（発注）","購買業務（請求・支払）","資材・在庫管理","人員管理","労務管理","人材育成","検針記録","使用料・請求書"],
+          l4:["見積（設備／機械部品／建物／洗剤／資材・消耗品／ユーティリティ）"] },
+  iso:  { l3:["基準・ルール","教育・訓練","広報活動","外部派遣"], l4:["基準・ルール（ISO規格ほか）","組織改定","予算","日常運営・計画"] },
+  proc: { l3:["リネン","資材","機械部品","車両","その他"], l4:["仕入価格交渉・与信"] },
+  wps:  { l3:["05_購買（仕入支払／請求書／注文書）"], l4:["05_購買（見積）"] },
+  rnd:  { l3:["開発","インフラ","運用"] },
+  fin:  { l3:["会計資料","経理基準"], l4:["担当者限定（契約・税務・回収）"] },
+  gov:  { l3:["契約管理","法対応","就業規則管理","知的財産"] },
+  hr:   { l3:["人事情報","採用（新卒／中途／パート）","就労情報","人事運営"],
+          l4:["給与改定・賞与・人事考課","採用申請","給与情報","労務管理","健康診断・保健指導"] },
+  ga:   { l3:["各種保険","予算","各種行事","行政対応","設備営繕","福利厚生","広報","総務運用"], l4:["安全衛生","産業医管理"] },
+  it:   { l3:["開発","インフラ","運用"] },
+  svc:  { l3:["運行管理","シフト","業務指示書","車輌・走行距離"], l4:["エリア会議","予算","稼働率"] },
+  linen:{ l3:["受注","発注","加工","入荷"] },
+};
 
 /* ペルソナ：所属＝営業部（購買兼任）。mgr=管理職、exec=役員・個別指定 */
 const PERSONA = {
@@ -356,6 +387,7 @@ function render(){
   if(fF) rows = rows.filter(f=>f[4]===fF);
   if(fY) rows = rows.filter(f=>f[7]===fY);
   if(q) rows = rows.filter(f=>(f[2]+f[4]+f[6]).toLowerCase().includes(q));
+  const flds = (!fF&&!fY&&!q) ? ((FOLDERS[curSite]||{})[lib.key]||[]) : [];
 
   main.innerHTML = `
     <div class="cmdbar">
@@ -373,7 +405,7 @@ function render(){
     </div>
     <div class="libtitle">${lib.name}</div>
     ${(fF||fY)?`<div style="font-size:12px;color:#0078d4;padding-bottom:8px">フィルター適用中：${fF?`F分類=${fF} `:""}${fY?`年度=${fY}`:""} <span style="cursor:pointer" onclick="fF='';fY='';render()">✕ クリア</span></div>`:""}
-    ${rows.length?`
+    ${(flds.length||rows.length)?`
     <table class="doclist">
       <tr>
         <th class="sel"></th>
@@ -394,6 +426,12 @@ function render(){
           </div>`:""}</th>
         <th>更新日時</th><th>更新者</th><th style="color:#0078d4">＋ 列の追加</th>
       </tr>
+      ${flds.map(fn=>`<tr class="row">
+        <td class="sel"></td>
+        <td><span class="fname"><span class="ficon" style="background:none;color:#ffb900;font-size:17px">📁</span>${fn}</span></td>
+        <td></td><td></td><td class="muted">${site.dept}</td><td class="muted"></td>
+        <td class="muted">7月22日</td><td class="muted">${site.dept}</td><td></td>
+      </tr>`).join("")}
       ${rows.map(f=>`<tr class="row">
         <td class="sel"></td>
         <td><span class="fname"><span class="ficon ${f[3]}">${{fx:"X",fw:"W",fp:"P",fpdf:"PDF",fmp4:"▶",fzip:"ZIP"}[f[3]]}</span>${f[2]}</span></td>
