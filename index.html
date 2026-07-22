@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>新日本ウエックス様 SharePoint移管 設計デモ（v2.2 レベルサイト構成）</title>
+<title>新日本ウエックス様 SharePoint移管 設計デモ（v3.0 業務サイト×機密レベルライブラリ）</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif; font-size:14px; color:#323130; background:#faf9f8; }
@@ -132,12 +132,12 @@
 <!-- デモ操作バー（実画面には存在しない） -->
 <div class="demobar">
   <b>⚠ UIモック（デモ）</b>
-  <span>設計書v2.2のサイト構成をSharePoint実画面の見た目で再現したものです。権限のないサイト・ライブラリは本番同様リンクごと表示されません（表示ユーザーを切り替えると出現します）。実環境は8月の検証サイトでご確認いただけます。</span>
+  <span>設計書v3.0（7/22お打合せ反映：サイト＝業務区分×ライブラリ＝機密レベル）をSharePoint実画面の見た目で再現したものです。権限のないサイト・ライブラリは本番同様リンクごと表示されません（表示ユーザーを切り替えると出現します）。実環境は8月の検証サイトでご確認いただけます。</span>
   <span style="display:flex;align-items:center;gap:6px"><b>デモ操作＝表示ユーザー:</b>
     <select id="persona" onchange="onPersona()">
-      <option value="L3">営業部・一般社員（〜L3）</option>
-      <option value="L4">営業部・管理職（〜L4）</option>
-      <option value="L5">役員・個別指定（〜L5）</option>
+      <option value="L3">営業部・一般社員（購買兼任）</option>
+      <option value="L4">営業部・管理職</option>
+      <option value="L5">役員・個別指定（L5）</option>
     </select>
   </span>
 </div>
@@ -178,138 +178,178 @@
 </div>
 
 <script>
-/* ====== 設計書 v2.2 構成データ ====== */
+/* ====== 設計書 v3.0 構成データ（7/22打合せ反映：サイト＝業務区分×ライブラリ＝機密レベル） ====== */
 const SITES = [
-  { id:"l1", lv:"L1", name:"L1_公開情報", color:"#2f5597", need:1, members:412,
-    desc:"会社案内・採用情報など一般公開できる正本" },
-  { id:"l2", lv:"L2", name:"L2_全社共有", color:"#217a3c", need:1, members:412,
-    desc:"規程・様式・通達（社外秘・社内全員閲覧）" },
-  { id:"l3", lv:"L3", name:"L3_部署業務", color:"#8a6d00", need:1, members:412,
-    desc:"既定の作業場所（部外秘・主管部署のみ）" },
-  { id:"l4", lv:"L4", name:"L4_管理職・特定者", color:"#c55a11", need:2, members:58,
-    desc:"管理職・担当者限定（秘密）" },
-  { id:"l5", lv:"L5", name:"L5_極秘", color:"#c00000", need:3, members:9,
-    desc:"個別指定（対象外には存在も見えない）" },
-  { id:"poc", lv:"X", name:"検証サイト群", color:"#797775", need:1, members:30, desc:"AI研修連動・検証用" },
-  { id:"arc", lv:"X", name:"アーカイブ", color:"#797775", need:1, members:412, desc:"保存義務のみ・読み取り専用" },
+  { id:"portal", short:"WX", name:"全社ポータル", color:"#0b3d91", dept:"管理本部", members:412, hub:true,
+    desc:"全サイトの入口・全社共有（規程・様式・通達）" },
+  { id:"gov",   short:"経", name:"経営ガバナンス",   color:"#5c2d91", dept:"管理本部", members:36, desc:"会議体・方針・計画" },
+  { id:"sales", short:"営", name:"顧客管理・営業",   color:"#0078d4", dept:"営業部",   members:74, desc:"顧客・見積・提案・営業報告" },
+  { id:"linen", short:"リ", name:"リネンサプライ",   color:"#038387", dept:"業務部",   members:52, desc:"受注・発注・加工・入荷" },
+  { id:"prod",  short:"生", name:"生産・品質",       color:"#217346", dept:"生産部",   members:88, desc:"生産計画・実績・改善・クレーム" },
+  { id:"proc",  short:"調", name:"調達・購買",       color:"#ca5010", dept:"購買",     members:41, kobai:true,
+    desc:"取引先別×5分類（★購買兼任メンバー横串）" },
+  { id:"rnd",   short:"技", name:"技術・研究開発",   color:"#8764b8", dept:"技術部",   members:23, desc:"クレーム・開発・ISO" },
+  { id:"fin",   short:"財", name:"財務・会計",       color:"#986f0b", dept:"経理部",   members:18, desc:"会計期別・監査" },
+  { id:"hr",    short:"人", name:"人事・労務",       color:"#d13438", dept:"管理本部", members:21, desc:"採用・教育・勤怠" },
+  { id:"ga",    short:"総", name:"総務・施設",       color:"#498205", dept:"管理本部", members:19, desc:"施設・保険・SDS・安全衛生" },
+  { id:"it",    short:"情", name:"情報システム",     color:"#69797e", dept:"情報システム部", members:12, desc:"IT計画・手順・ヘルプデスク" },
+  { id:"svc",   short:"物", name:"物流・配送",       color:"#004e8c", dept:"サービス部", members:96, desc:"運行管理・シフト・業務指示" },
+  { id:"l5",    short:"L5", name:"L5_極秘（個別）",  color:"#c00000", dept:"個別指定", members:9, l5:true,
+    desc:"必要時に個別作成（対象者以外には存在も見えない）" },
+  { id:"poc",   short:"検", name:"検証サイト",       color:"#797775", dept:"DX・AI推進課", members:30, open:true, desc:"AI研修連動・検証用" },
+  { id:"arc",   short:"AR", name:"アーカイブ",       color:"#797775", dept:"情報システム部", members:412, open:true, ro:true, desc:"保存義務のみ・読み取り専用" },
 ];
 
-const LIBS = [
-  { site:"l2", f:"F13", name:"社内規程・様式・通達", sg:"SG-全社-閲覧（編集＝主管部署）", cp:"対象（◎）", mine:true },
-  { site:"l2", f:"—", name:"部署間共有（L2）", sg:"SG-全社-閲覧", cp:"対象（◎）", mine:true },
-  { site:"l1", f:"F13", name:"公開情報（会社案内・採用）", sg:"SG-全社-閲覧", cp:"対象（◎）", mine:true },
-  { site:"l3", f:"F01", name:"経営・ガバナンス", sg:"SG-管理本部-L3", cp:"対象（○・権限内）", mine:false },
-  { site:"l3", f:"F02", name:"顧客管理・営業", sg:"SG-営業部-L3", cp:"対象（○・権限内）", mine:true },
-  { site:"l3", f:"F08", name:"リネンサプライ業務", sg:"SG-業務部-L3", cp:"対象（○・権限内）", mine:false },
-  { site:"l3", f:"F05/06", name:"生産・品質", sg:"SG-生産部-L3", cp:"対象（◎）", mine:false },
-  { site:"l3", f:"F04", name:"調達・購買", sg:"SG-購買室-L3", cp:"対象（○）", mine:false },
-  { site:"l3", f:"F14", name:"技術・研究開発", sg:"SG-技術部-L3", cp:"対象（◎）", mine:false },
-  { site:"l3", f:"F10", name:"財務・会計（会計期）", sg:"SG-経理-{事業会社}", cp:"対象（△・部門内）", mine:false },
-  { site:"l3", f:"F09", name:"人事・労務", sg:"SG-管理本部-L3", cp:"対象（△・部門内）", mine:false },
-  { site:"l3", f:"F12/13", name:"総務・施設・環境安全", sg:"SG-管理本部-L3", cp:"対象（○）", mine:false },
-  { site:"l3", f:"F11", name:"情報システム", sg:"SG-情シス-L3", cp:"対象（△）", mine:false },
-  { site:"l3", f:"F07", name:"物流・配送（サービス）", sg:"SG-サービス-L3", cp:"対象（○）", mine:false },
-  { site:"l3", f:"—", name:"部署間共有（L3・主管承認）", sg:"主管部署が付与", cp:"対象（△）", mine:true },
-  { site:"l4", f:"—", name:"管理職（用途別）", sg:"SG-営業部-L4", cp:"検索対象外（×）", mine:true },
-  { site:"l4", f:"F02", name:"単価・与信・価格交渉", sg:"SG-{部署}-L4限定", cp:"検索対象外（×）", mine:true },
-  { site:"l4", f:"F05", name:"処方・基礎データ", sg:"SG-生産部-L4限定", cp:"検索対象外（×）", mine:false },
-  { site:"l4", f:"F09", name:"人事評価・健診", sg:"SG-管理本部-L4限定", cp:"検索対象外（×）", mine:false },
-  { site:"l5", f:"F09", name:"給与・役員報酬", sg:"個別指定のみ", cp:"検索対象外（×）", mine:true },
-  { site:"l5", f:"F03", name:"訴訟・M&A", sg:"個別指定のみ", cp:"検索対象外（×）", mine:true },
-  { site:"l5", f:"F07", name:"事故映像", sg:"個別指定のみ", cp:"検索対象外（×）", mine:true },
-  { site:"poc", f:"—", name:"poc-営業部（検証用）", sg:"検証メンバー", cp:"検証用", mine:true },
-  { site:"arc", f:"—", name:"アーカイブ（部署別）", sg:"読み取り専用", cp:"検索対象外（×）", mine:true },
-];
+/* 各業務サイト共通：L2_全社共有／L3_部署業務（既定）／L4_管理職 の標準3点セット */
+const LIBS = [];
+for (const s of SITES) {
+  if (s.hub) { LIBS.push({ site:s.id, key:"l2", lv:"L2", name:"全社共有（規程・様式・通達）", sg:"SG-全社-閲覧（投稿＝管理本部）" }); continue; }
+  if (s.l5)  { LIBS.push({ site:s.id, key:"l5", lv:"L5", name:"役員報酬・訴訟・事故映像（案件別）", sg:"SG-L5-{案件}（個別指定のみ）" }); continue; }
+  if (s.open){ LIBS.push({ site:s.id, key:"main", lv:"—", name:s.id==="poc"?"poc-営業部（検証用）":"アーカイブ（部署別）", sg:s.id==="poc"?"検証メンバー":"SG-全社-閲覧（読み取り専用）" }); continue; }
+  const d = s.dept;
+  LIBS.push({ site:s.id, key:"l2", lv:"L2", name:"L2_全社共有", sg:`SG-全社-閲覧（投稿＝SG-${d}-Member）` });
+  LIBS.push({ site:s.id, key:"l3", lv:"L3", name:"L3_部署業務（既定）", sg: s.kobai ? "SG-購買メンバー（横串・兼任者全員）" : `SG-${d}-Member（サイト既定・継承）` });
+  LIBS.push({ site:s.id, key:"l4", lv:"L4", name:"L4_管理職", sg:`SG-${d}-Mgr（当該業務の管理職のみ）` });
+}
 
-/* lib, name, icon, F, level, 部署, 年度, 更新者 */
+/* site, key, name, icon, F, level, 主管, 年度, 更新者 */
 const FILES = [
-  ["社内規程・様式・通達","就業規則・規程原本.pdf","fpdf","F13","L2","管理本部","2026","津曲 雄治"],
-  ["社内規程・様式・通達","20260401_稟議書フォーマット.docx","fw","F13","L2","管理本部","2026","津曲 雄治"],
-  ["社内規程・様式・通達","内線番号一覧.xlsx","fx","F13","L2","管理本部","2026","総務 担当"],
-  ["部署間共有（L2）","20260601_営業→生産_連携依頼シート.xlsx","fx","F02","L2","営業部","2026","中道 一史"],
-  ["公開情報（会社案内・採用）","会社案内2026.pdf","fpdf","F13","L1","管理本部","2026","広報 担当"],
-  ["公開情報（会社案内・採用）","採用情報_新卒パンフレット.pdf","fpdf","F09","L1","管理本部","2026","採用 担当"],
-  ["経営・ガバナンス","2026年度_部門方針.pptx","fp","F01","L3","管理本部","2026","河合 一夫"],
-  ["顧客管理・営業","20260610_JWマリオットホテル東京_見積.xlsx","fx","F02","L3","営業部","2026","中道 一史"],
-  ["顧客管理・営業","20260615_OMO7横浜_受注書.xlsx","fx","F02","L3","営業部","2026","山崎 大介"],
-  ["顧客管理・営業","20260620_ザセレスティン銀座_提案書.pptx","fp","F02","L3","営業部","2026","鈴木 部長"],
-  ["顧客管理・営業","2025年度_京都第1営業_エリア会議資料.xlsx","fx","F02","L3","営業部","2025","京都 営業"],
-  ["リネンサプライ業務","20260616_払出データ_加工前.xlsx","fx","F08","L3","業務部","2026","水谷 部長"],
-  ["リネンサプライ業務","20260616_払出データ_加工後.xlsx","fx","F08","L3","業務部","2026","業務 担当"],
-  ["生産・品質","製品X_ロット2308_試験成績書.xlsx","fx","F06","L3","技術部","2026","品質 担当"],
-  ["生産・品質","2026W25_食品UF不良率_週次.xlsx","fx","F06","L3","生産部","2026","内田 課長"],
-  ["生産・品質","2026W25_仕上データ_福岡以外.xlsx","fx","F05","L3","生産部","2026","生産 担当"],
-  ["調達・購買","取引先リスト_リネン資材.xlsx","fx","F04","L3","購買室","2026","川瀬"],
-  ["技術・研究開発","20260403_テーブル仕様書_M.docx","fw","F14","L3","技術部","2026","上田 室長"],
-  ["財務・会計（会計期）","202606_関東エリア_月次実績.xlsx","fx","F10","L3","経理部","2026","安部 次長"],
-  ["人事・労務","27卒_採用面接シート.docx","fw","F09","L3","管理本部","2026","採用 担当"],
-  ["総務・施設・環境安全","SDS一覧_2026.xlsx","fx","F12","L3","管理本部","2026","総務 担当"],
-  ["情報システム","kintone_操作手順書.pdf","fpdf","F11","L3","情シス","2026","堀口 次長"],
-  ["物流・配送（サービス）","添乗指導チェックポイント_追突事故防止.docx","fw","F07","L3","サービス","2026","中垣内 部長"],
-  ["部署間共有（L3・主管承認）","20260618_営業⇔業務_共同編集シート.xlsx","fx","F02","L3","営業部","2026","中道 一史"],
-  ["管理職（用途別）","2026上期_エリア会議_予算実績.pptx","fp","F02","L4","営業部","2026","鈴木 部長"],
-  ["単価・与信・価格交渉","顧客別単価一覧_2026.xlsx","fx","F02","L4","営業部","2026","鈴木 部長"],
-  ["単価・与信・価格交渉","与信限度額管理表.xlsx","fx","F02","L4","営業部","2026","営業 管理職"],
-  ["処方・基礎データ","処方マスタ_洗剤配合.xlsx","fx","F05","L4","生産部","2026","処方 管理者"],
-  ["人事評価・健診","健康診断用名簿.xlsx","fx","F09","L4","管理本部","2026","人給 担当"],
-  ["給与・役員報酬","役員報酬の明細.xlsx","fx","F09","L5","管理本部","2026","（個別指定）"],
-  ["訴訟・M&A","デューデリジェンス資料.pdf","fpdf","F03","L5","管理本部","2026","（個別指定）"],
-  ["事故映像","ドライブレコーダー記録_20260410.mp4","fmp4","F07","L5","サービス","2026","（個別指定）"],
-  ["poc-営業部（検証用）","検証用サンプル_プロンプト集.docx","fw","—","—","DX推進","2026","田村 健人"],
-  ["アーカイブ（部署別）","2015年度_旧営業報告.zip","fzip","F02","—","営業部","2015","—"],
+  ["portal","l2","就業規則・規程原本.pdf","fpdf","F13","L2","管理本部","2026","津曲 雄治"],
+  ["portal","l2","20260401_稟議書フォーマット.docx","fw","F13","L2","管理本部","2026","津曲 雄治"],
+  ["portal","l2","内線番号一覧.xlsx","fx","F13","L2","管理本部","2026","総務 担当"],
+  ["portal","l2","会社案内2026.pdf","fpdf","F13","L2","管理本部","2026","広報 担当"],
+
+  ["gov","l2","2026年度_会社方針（全社説明版）.pptx","fp","F01","L2","管理本部","2026","河合 一夫"],
+  ["gov","l3","2026年度_部門方針.pptx","fp","F01","L3","管理本部","2026","河合 一夫"],
+  ["gov","l4","役員会_審議資料_2026Q2.pptx","fp","F01","L4","管理本部","2026","経営企画"],
+
+  ["sales","l2","20260601_営業→生産_連携依頼シート.xlsx","fx","F02","L2","営業部","2026","中道 一史"],
+  ["sales","l3","20260610_JWマリオットホテル東京_見積.xlsx","fx","F02","L3","営業部","2026","中道 一史"],
+  ["sales","l3","20260615_OMO7横浜_受注書.xlsx","fx","F02","L3","営業部","2026","山崎 大介"],
+  ["sales","l3","20260620_ザセレスティン銀座_提案書.pptx","fp","F02","L3","営業部","2026","鈴木 部長"],
+  ["sales","l3","2025年度_京都第1営業_エリア会議資料.xlsx","fx","F02","L3","営業部","2025","京都 営業"],
+  ["sales","l4","2026上期_エリア会議_予算実績.pptx","fp","F02","L4","営業部","2026","鈴木 部長"],
+  ["sales","l4","顧客別単価一覧_2026.xlsx","fx","F02","L4","営業部","2026","鈴木 部長"],
+  ["sales","l4","与信限度額管理表.xlsx","fx","F02","L4","営業部","2026","営業 管理職"],
+
+  ["linen","l2","リネン取扱いガイド（全社向け）.pdf","fpdf","F08","L2","業務部","2026","水谷 部長"],
+  ["linen","l3","20260616_払出データ_加工前.xlsx","fx","F08","L3","業務部","2026","水谷 部長"],
+  ["linen","l3","20260616_払出データ_加工後.xlsx","fx","F08","L3","業務部","2026","業務 担当"],
+
+  ["prod","l2","20260701_品質月報（全社共有版）.pdf","fpdf","F06","L2","生産部","2026","内田 課長"],
+  ["prod","l3","製品X_ロット2308_試験成績書.xlsx","fx","F06","L3","生産部","2026","品質 担当"],
+  ["prod","l3","2026W25_食品UF不良率_週次.xlsx","fx","F06","L3","生産部","2026","内田 課長"],
+  ["prod","l3","2026W25_仕上データ_福岡以外.xlsx","fx","F05","L3","生産部","2026","生産 担当"],
+  ["prod","l4","処方マスタ_洗剤配合.xlsx","fx","F05","L4","生産部","2026","処方 管理者"],
+
+  ["proc","l2","購買申請の手引き.pdf","fpdf","F04","L2","購買","2026","川瀬"],
+  ["proc","l3","取引先リスト_リネン資材.xlsx","fx","F04","L3","購買","2026","川瀬"],
+  ["proc","l4","仕入価格交渉_2026下期方針.xlsx","fx","F04","L4","購買","2026","購買 管理職"],
+
+  ["rnd","l2","技術ニュースレター_2026夏号.pdf","fpdf","F14","L2","技術部","2026","上田 室長"],
+  ["rnd","l3","20260403_テーブル仕様書_M.docx","fw","F14","L3","技術部","2026","上田 室長"],
+
+  ["fin","l2","経費精算マニュアル.pdf","fpdf","F10","L2","経理部","2026","安部 次長"],
+  ["fin","l3","202606_関東エリア_月次実績.xlsx","fx","F10","L3","経理部","2026","安部 次長"],
+  ["fin","l4","監査法人往査_提出資料一式.xlsx","fx","F10","L4","経理部","2026","安部 次長"],
+
+  ["hr","l2","20260615_人事異動のお知らせ.pdf","fpdf","F09","L2","管理本部","2026","人事 担当"],
+  ["hr","l3","27卒_採用面接シート.docx","fw","F09","L3","管理本部","2026","採用 担当"],
+  ["hr","l4","健康診断用名簿.xlsx","fx","F09","L4","管理本部","2026","人給 担当"],
+
+  ["ga","l2","防災訓練のご案内_2026.pdf","fpdf","F12","L2","管理本部","2026","総務 担当"],
+  ["ga","l3","SDS一覧_2026.xlsx","fx","F12","L3","管理本部","2026","総務 担当"],
+
+  ["it","l2","M365利用ガイド（全社員向け）.pdf","fpdf","F11","L2","情報システム部","2026","堀口 次長"],
+  ["it","l3","kintone_操作手順書.pdf","fpdf","F11","L3","情報システム部","2026","堀口 次長"],
+
+  ["svc","l2","安全運転10か条.pdf","fpdf","F07","L2","サービス部","2026","中垣内 部長"],
+  ["svc","l3","添乗指導チェックポイント_追突事故防止.docx","fw","F07","L3","サービス部","2026","中垣内 部長"],
+  ["svc","l4","エリア会議_予算・稼働率.xlsx","fx","F07","L4","サービス部","2026","サービス 管理職"],
+
+  ["l5","l5","役員報酬の明細.xlsx","fx","F09","L5","管理本部","2026","（個別指定）"],
+  ["l5","l5","デューデリジェンス資料.pdf","fpdf","F03","L5","管理本部","2026","（個別指定）"],
+  ["l5","l5","ドライブレコーダー記録_20260410.mp4","fmp4","F07","L5","サービス","2026","（個別指定）"],
+
+  ["poc","main","検証用サンプル_プロンプト集.docx","fw","—","—","DX推進","2026","田村 健人"],
+  ["arc","main","2015年度_旧営業報告.zip","fzip","F02","—","営業部","2015","—"],
 ];
 
-const PERSONA = { L3:{need:1,av:"社"}, L4:{need:2,av:"管"}, L5:{need:3,av:"役"} };
-let curSite="l3", curLib="顧客管理・営業", fF="", fY="", openMenu="", infoOpen=false;
+/* ペルソナ：所属＝営業部（購買兼任）。mgr=管理職、exec=役員・個別指定 */
+const PERSONA = {
+  L3:{ dept:"営業部", kobai:true,  mgr:false, exec:false, av:"社" },
+  L4:{ dept:"営業部", kobai:true,  mgr:true,  exec:false, av:"管" },
+  L5:{ dept:"営業部", kobai:true,  mgr:true,  exec:true,  av:"役" },
+};
+let curSite="sales", curLib="l3", fF="", fY="", openMenu="", infoOpen=false;
 
-const lvl = () => PERSONA[document.getElementById("persona").value].need;
+const me = () => PERSONA[document.getElementById("persona").value];
+const isMySite = s => s.dept===me().dept || (s.kobai && me().kobai);
+
+/* 見える／見えない（本番＝権限のないものはリンクごと非表示） */
+function canSee(l){
+  const s = SITES.find(x=>x.id===l.site), p = me();
+  if (p.exec) return true;
+  if (s.l5) return false;                       // L5：対象者以外は存在も見えない（J-30）
+  if (s.open || s.hub) return true;             // ポータル・検証・アーカイブ
+  if (l.key==="l2") return true;                // L2＝全社閲覧
+  if (l.key==="l3") return isMySite(s);         // L3＝自部署（購買は兼任横串・J-29）
+  if (l.key==="l4") return isMySite(s) && p.mgr;// L4＝当該業務の管理職のみ
+  return false;
+}
+/* 更新できるか（投稿）／閲覧のみ */
+function canEdit(l){
+  const s = SITES.find(x=>x.id===l.site), p = me();
+  if (s.ro) return false;                       // アーカイブ＝読み取り専用
+  if (s.l5) return p.exec;
+  if (s.id==="poc") return true;
+  if (l.key==="l2") return s.dept===p.dept || (s.hub && false);
+  return isMySite(s) && (l.key!=="l4" || p.mgr);
+}
+const siteVisible = s => LIBS.some(l=>l.site===s.id && canSee(l));
+
 function onPersona(){
-  document.getElementById("avatar").textContent = PERSONA[document.getElementById("persona").value].av;
+  document.getElementById("avatar").textContent = me().av;
   const s = SITES.find(x=>x.id===curSite);
-  if(s && s.need>lvl()){ curSite="l3"; curLib="顧客管理・営業"; }
+  if(!s || !siteVisible(s)){ curSite="sales"; curLib="l3"; }
   render();
 }
-const canSee = l => !(l.site==="l3" && !l.mine && lvl()<2);
 
 function render(){
-  const L = lvl();
-  /* ハブナビ */
+  /* ハブナビ（権限が無いサイトはリンクごと非表示＝本番のナビ対象ユーザー設定と同じ挙動） */
   document.getElementById("hubnav").innerHTML =
-    `<div class="hubname"><span class="tile">WX</span>新日本ウエックス ポータル</div>` +
-    SITES.map(s=>{
-      if(s.need>L) return "";  // 権限が無いサイトはリンクごと非表示（本番＝ナビの対象ユーザー設定と同じ挙動）
-      return `<div class="hublink ${s.id===curSite?"on":""}"
-        onclick="selSite('${s.id}')" title="${s.desc}">${s.name}</div>`;
-    }).join("");
+    `<div class="hubname" style="cursor:pointer" onclick="selSite('portal')"><span class="tile">WX</span>新日本ウエックス ポータル</div>` +
+    SITES.filter(s=>!s.hub && siteVisible(s)).map(s=>
+      `<div class="hublink ${s.id===curSite?"on":""}" onclick="selSite('${s.id}')" title="${s.desc}">${s.name}</div>`
+    ).join("");
 
   const site = SITES.find(s=>s.id===curSite);
   /* サイトヘッダー */
   document.getElementById("sitehead").innerHTML = `
     <div class="sh-row">
-      <div class="sitetile" style="background:${site.color}">${site.lv==="X"?"AR":site.lv}</div>
+      <div class="sitetile" style="background:${site.color}">${site.short}</div>
       <div>
         <div class="sh-title">${site.name}</div>
-        <div class="sh-sub"><span>チーム サイト</span><span>${site.desc}</span></div>
+        <div class="sh-sub"><span>${site.hub?"ハブ サイト":"チーム サイト"}</span><span>${site.desc}</span></div>
       </div>
       <button class="followbtn">☆ フォロー</button>
       <span class="members" style="margin-left:14px">👥 メンバー ${site.members}人</span>
     </div>
     <div class="sh-nav"><div class="on">ホーム</div><div>ドキュメント</div><div>ページ</div><div>サイト コンテンツ</div></div>`;
 
-  /* クイック起動 */
+  /* クイック起動（ライブラリ＝機密レベルの標準3点セット） */
   const libs = LIBS.filter(l=>l.site===curSite);
   document.getElementById("quick").innerHTML =
-    `<div class="qh">ドキュメント ライブラリ（用途＝F分類）</div>` +
-    libs.filter(canSee).map(l=>  // 権限が無いライブラリはリンクごと非表示（本番＝対象ユーザー設定と同じ挙動）
-      `<div class="qi ${l.name===curLib?"on":""}"
-        onclick="selLib('${l.name}')" title="${l.sg}">
-        <span class="f">${l.f}</span>${l.name}</div>`
+    `<div class="qh">ドキュメント ライブラリ（機密レベル別）</div>` +
+    libs.filter(canSee).map(l=>
+      `<div class="qi ${l.key===curLib?"on":""}" onclick="selLib('${l.key}')" title="${l.sg}">
+        <span class="f">${l.lv}</span>${l.name}</div>`
     ).join("") +
     `<hr><div class="qi">ごみ箱</div><div class="qi">サイト コンテンツ</div>`;
 
   /* ライブラリ本体 */
   const main = document.getElementById("libarea");
-  const lib = libs.find(l=>l.name===curLib && canSee(l)) || libs.find(canSee);
+  const lib = libs.find(l=>l.key===curLib && canSee(l)) || libs.find(canSee);
   if(!lib){
     main.innerHTML = `<div class="denied"><div class="lk">🔒</div>
       <h2>このサイトへのアクセス許可が必要です</h2>
@@ -318,29 +358,31 @@ function render(){
       <button class="req">アクセスの要求を送信</button></div>`;
     document.getElementById("infopane").className="infopane"; return;
   }
-  curLib = lib.name;
+  curLib = lib.key;
+  const editable = canEdit(lib);
 
   const q = document.getElementById("q").value.trim().toLowerCase();
-  let rows = FILES.filter(f=>f[0]===lib.name);
-  const fvals = [...new Set(rows.map(f=>f[3]))], yvals=[...new Set(rows.map(f=>f[6]))];
-  if(fF) rows = rows.filter(f=>f[3]===fF);
-  if(fY) rows = rows.filter(f=>f[6]===fY);
-  if(q) rows = rows.filter(f=>(f[1]+f[3]+f[5]).toLowerCase().includes(q));
+  let rows = FILES.filter(f=>f[0]===curSite && f[1]===lib.key);
+  const fvals = [...new Set(rows.map(f=>f[4]))], yvals=[...new Set(rows.map(f=>f[7]))];
+  if(fF) rows = rows.filter(f=>f[4]===fF);
+  if(fY) rows = rows.filter(f=>f[7]===fY);
+  if(q) rows = rows.filter(f=>(f[2]+f[4]+f[6]).toLowerCase().includes(q));
 
   main.innerHTML = `
     <div class="cmdbar">
+      ${editable?`
       <div class="cmd primary"><span class="i">＋</span>新規 <span class="caret">▼</span></div>
-      <div class="cmd"><span class="i">↑</span>アップロード <span class="caret">▼</span></div>
+      <div class="cmd"><span class="i">↑</span>アップロード <span class="caret">▼</span></div>`:""}
       <div class="cmd"><span class="i">⇄</span>同期</div>
       <div class="cmd"><span class="i">⤓</span>ダウンロード</div>
-      <div class="cmd"><span class="i">⚡</span>自動化 <span class="caret">▼</span></div>
+      ${editable?`<div class="cmd"><span class="i">⚡</span>自動化 <span class="caret">▼</span></div>`:""}
       <div class="cmd">…</div>
       <div class="cmd-r">
         <div class="cmd">＝ すべてのドキュメント <span class="caret">▼</span></div>
         <div class="cmd" onclick="toggleInfo()" title="詳細ウィンドウ"><span class="i">ⓘ</span></div>
       </div>
     </div>
-    <div class="libtitle">${lib.name}</div>
+    <div class="libtitle">${lib.name}${editable?"":`　<span style="font-size:12px;font-weight:400;color:#605e5c">（閲覧のみ）</span>`}</div>
     ${(fF||fY)?`<div style="font-size:12px;color:#0078d4;padding-bottom:8px">フィルター適用中：${fF?`F分類=${fF} `:""}${fY?`年度=${fY}`:""} <span style="cursor:pointer" onclick="fF='';fY='';render()">✕ クリア</span></div>`:""}
     ${rows.length?`
     <table class="doclist">
@@ -365,28 +407,29 @@ function render(){
       </tr>
       ${rows.map(f=>`<tr class="row">
         <td class="sel"></td>
-        <td><span class="fname"><span class="ficon ${f[2]}">${{fx:"X",fw:"W",fp:"P",fpdf:"PDF",fmp4:"▶",fzip:"ZIP"}[f[2]]}</span>${f[1]}</span></td>
-        <td><b>${f[3]}</b></td>
-        <td><span class="pill pl-${f[4]==="—"?"X":f[4]}">${f[4]}</span></td>
-        <td class="muted">${f[5]}</td><td class="muted">${f[6]}</td>
-        <td class="muted">7月17日</td><td class="muted">${f[7]}</td><td></td>
+        <td><span class="fname"><span class="ficon ${f[3]}">${{fx:"X",fw:"W",fp:"P",fpdf:"PDF",fmp4:"▶",fzip:"ZIP"}[f[3]]}</span>${f[2]}</span></td>
+        <td><b>${f[4]}</b></td>
+        <td><span class="pill pl-${f[5]==="—"?"X":f[5]}">${f[5]}</span></td>
+        <td class="muted">${f[6]}</td><td class="muted">${f[7]}</td>
+        <td class="muted">7月22日</td><td class="muted">${f[8]}</td><td></td>
       </tr>`).join("")}
     </table>`:`<div style="padding:40px;text-align:center;color:#a19f9d;font-size:13px">条件に一致するアイテムはありません</div>`}
-    <div class="footnote">※ UIモック（設計書v2.2準拠・サンプルデータ）。F分類・年度の列ヘッダー「▼」からフィルターを試せます。実環境は8月の検証サイトで構築します。</div>`;
+    <div class="footnote">※ UIモック（設計書v3.0準拠・サンプルデータ）。F分類・年度の列ヘッダー「▼」からフィルターを試せます。実環境は8月の検証サイトで構築します。</div>`;
 
   /* 詳細ペイン */
   const ip = document.getElementById("infopane");
   ip.className = "infopane" + (infoOpen?" on":"");
+  const cp = {L2:"対象（◎ 全社検索）", L3:"対象（○ 権限準拠）", L4:"検索対象外（× 専用エージェントのみ）", L5:"検索対象外（×）", "—":"対象外"}[lib.lv];
   ip.innerHTML = `<h3>${lib.name}</h3>
-    <div class="ip-row"><div class="k">権限（設計書シート6）</div><div class="v">${lib.sg}</div></div>
-    <div class="ip-row"><div class="k">F分類（メタデータ主軸）</div><div class="v">${lib.f}</div></div>
-    <div class="ip-row"><div class="k">Copilot／全社検索</div><div class="v">${lib.cp}</div></div>
-    <div class="ip-row"><div class="k">機密レベル（サイト）</div><div class="v">${site.lv}：${site.desc}</div></div>
-    <div class="ip-row"><div class="k">設計原則</div><div class="v">既定=L3／見せたくない→上げる／フォルダー権限は不可（J-19〜J-21）</div></div>`;
+    <div class="ip-row"><div class="k">権限グループ（設計書シート6）</div><div class="v">${lib.sg}</div></div>
+    <div class="ip-row"><div class="k">あなたの権限</div><div class="v">${editable?"投稿（更新できます）":"閲覧のみ"}</div></div>
+    <div class="ip-row"><div class="k">Copilot／全社検索</div><div class="v">${cp}</div></div>
+    <div class="ip-row"><div class="k">分類の扱い</div><div class="v">フォルダ＝用途・F分類（3階層以内）／部署・年度＝メタデータ列</div></div>
+    <div class="ip-row"><div class="k">設計原則</div><div class="v">サイト＝業務区分・ライブラリ＝機密レベル（J-26/J-27）。既定=L3／見せたくない→上げる・広く見せたい→下げる（J-20）</div></div>`;
 }
 
-function selSite(id){ curSite=id; const f=LIBS.find(l=>l.site===id&&canSee(l)); curLib=f?f.name:""; fF="";fY="";openMenu=""; document.getElementById("q").value=""; render(); }
-function selLib(n){ curLib=n; fF="";fY="";openMenu=""; render(); }
+function selSite(id){ curSite=id; const vis=LIBS.filter(l=>l.site===id&&canSee(l)); const f=vis.find(l=>l.key==="l3")||vis[0]; curLib=f?f.key:""; fF="";fY="";openMenu=""; document.getElementById("q").value=""; render(); }
+function selLib(k){ curLib=k; fF="";fY="";openMenu=""; render(); }
 function menu(m){ openMenu = openMenu===m?"":m; render(); }
 function setF(v){ fF=v; openMenu=""; render(); }
 function setY(v){ fY=v; openMenu=""; render(); }
