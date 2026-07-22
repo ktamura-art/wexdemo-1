@@ -3,17 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>新日本ウエックス様 SharePoint移管 設計デモ（v3.0 業務サイト×機密レベルライブラリ）</title>
+<title>ホーム - 顧客管理・営業</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif; font-size:14px; color:#323130; background:#faf9f8; }
   button { font-family:inherit; }
-
-  /* ===== デモ操作バー（実画面には無い・説明用） ===== */
-  .demobar { background:#fff4ce; border-bottom:1px solid #f0e3ad; padding:5px 14px; font-size:12px; color:#605e5c; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-  .demobar b { color:#8a6d00; }
-  .demobar select { height:24px; font-size:12px; border:1px solid #d2c98f; border-radius:3px; background:#fffdf5; }
-  .demobar a { color:#0078d4; text-decoration:none; margin-left:auto; }
 
   /* ===== M365 スイートバー ===== */
   .suite { background:#000; height:48px; display:flex; align-items:center; color:#fff; padding:0 0 0 0; }
@@ -129,19 +123,6 @@
 </head>
 <body>
 
-<!-- デモ操作バー（実画面には存在しない） -->
-<div class="demobar">
-  <b>⚠ UIモック（デモ）</b>
-  <span>設計書v3.0（7/22お打合せ反映：サイト＝業務区分×ライブラリ＝機密レベル）をSharePoint実画面の見た目で再現したものです。権限のないサイト・ライブラリは本番同様リンクごと表示されません（表示ユーザーを切り替えると出現します）。実環境は8月の検証サイトでご確認いただけます。</span>
-  <span style="display:flex;align-items:center;gap:6px"><b>デモ操作＝表示ユーザー:</b>
-    <select id="persona" onchange="onPersona()">
-      <option value="L3">営業部・一般社員（購買兼任）</option>
-      <option value="L4">営業部・管理職</option>
-      <option value="L5">役員・個別指定（L5）</option>
-    </select>
-  </span>
-</div>
-
 <!-- M365 スイートバー -->
 <div class="suite">
   <div class="waffle-btn"><div class="waffle"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
@@ -149,7 +130,7 @@
   <div class="suite-search"><div class="box"><span>🔍</span><input id="q" placeholder="このライブラリを検索" oninput="render()"></div></div>
   <div class="suite-icons">
     <div class="ic">⚙</div><div class="ic">？</div><div class="ic">🔔</div>
-    <div class="me" id="avatar">社</div>
+    <div class="me" id="avatar" onclick="cyclePersona()" style="cursor:pointer" title="アカウント">社</div>
   </div>
 </div>
 
@@ -283,7 +264,10 @@ const PERSONA = {
 };
 let curSite="sales", curLib="l3", fF="", fY="", openMenu="", infoOpen=false;
 
-const me = () => PERSONA[document.getElementById("persona").value];
+/* 表示ユーザー：URLの ?user=L3|L4|L5 で指定。右上アバターのクリックで切替（画面上の説明表示は無し） */
+let curPersona = (new URLSearchParams(location.search).get("user")||"L3").toUpperCase();
+if(!PERSONA[curPersona]) curPersona = "L3";
+const me = () => PERSONA[curPersona];
 const isMySite = s => s.dept===me().dept || (s.kobai && me().kobai);
 
 /* 見える／見えない（本番＝権限のないものはリンクごと非表示） */
@@ -308,6 +292,11 @@ function canEdit(l){
 }
 const siteVisible = s => LIBS.some(l=>l.site===s.id && canSee(l));
 
+function cyclePersona(){
+  const keys = Object.keys(PERSONA);
+  curPersona = keys[(keys.indexOf(curPersona)+1) % keys.length];
+  onPersona();
+}
 function onPersona(){
   document.getElementById("avatar").textContent = me().av;
   const s = SITES.find(x=>x.id===curSite);
@@ -324,6 +313,7 @@ function render(){
     ).join("");
 
   const site = SITES.find(s=>s.id===curSite);
+  document.title = `ホーム - ${site.name}`;
   /* サイトヘッダー */
   document.getElementById("sitehead").innerHTML = `
     <div class="sh-row">
@@ -340,10 +330,9 @@ function render(){
   /* クイック起動（ライブラリ＝機密レベルの標準3点セット） */
   const libs = LIBS.filter(l=>l.site===curSite);
   document.getElementById("quick").innerHTML =
-    `<div class="qh">ドキュメント ライブラリ（機密レベル別）</div>` +
+    `<div class="qh">ドキュメント ライブラリ</div>` +
     libs.filter(canSee).map(l=>
-      `<div class="qi ${l.key===curLib?"on":""}" onclick="selLib('${l.key}')" title="${l.sg}">
-        <span class="f">${l.lv}</span>${l.name}</div>`
+      `<div class="qi ${l.key===curLib?"on":""}" onclick="selLib('${l.key}')">${l.name}</div>`
     ).join("") +
     `<hr><div class="qi">ごみ箱</div><div class="qi">サイト コンテンツ</div>`;
 
@@ -382,7 +371,7 @@ function render(){
         <div class="cmd" onclick="toggleInfo()" title="詳細ウィンドウ"><span class="i">ⓘ</span></div>
       </div>
     </div>
-    <div class="libtitle">${lib.name}${editable?"":`　<span style="font-size:12px;font-weight:400;color:#605e5c">（閲覧のみ）</span>`}</div>
+    <div class="libtitle">${lib.name}</div>
     ${(fF||fY)?`<div style="font-size:12px;color:#0078d4;padding-bottom:8px">フィルター適用中：${fF?`F分類=${fF} `:""}${fY?`年度=${fY}`:""} <span style="cursor:pointer" onclick="fF='';fY='';render()">✕ クリア</span></div>`:""}
     ${rows.length?`
     <table class="doclist">
@@ -413,19 +402,16 @@ function render(){
         <td class="muted">${f[6]}</td><td class="muted">${f[7]}</td>
         <td class="muted">7月22日</td><td class="muted">${f[8]}</td><td></td>
       </tr>`).join("")}
-    </table>`:`<div style="padding:40px;text-align:center;color:#a19f9d;font-size:13px">条件に一致するアイテムはありません</div>`}
-    <div class="footnote">※ UIモック（設計書v3.0準拠・サンプルデータ）。F分類・年度の列ヘッダー「▼」からフィルターを試せます。実環境は8月の検証サイトで構築します。</div>`;
+    </table>`:`<div style="padding:40px;text-align:center;color:#a19f9d;font-size:13px">条件に一致するアイテムはありません</div>`}`;
 
   /* 詳細ペイン */
   const ip = document.getElementById("infopane");
   ip.className = "infopane" + (infoOpen?" on":"");
-  const cp = {L2:"対象（◎ 全社検索）", L3:"対象（○ 権限準拠）", L4:"検索対象外（× 専用エージェントのみ）", L5:"検索対象外（×）", "—":"対象外"}[lib.lv];
   ip.innerHTML = `<h3>${lib.name}</h3>
-    <div class="ip-row"><div class="k">権限グループ（設計書シート6）</div><div class="v">${lib.sg}</div></div>
-    <div class="ip-row"><div class="k">あなたの権限</div><div class="v">${editable?"投稿（更新できます）":"閲覧のみ"}</div></div>
-    <div class="ip-row"><div class="k">Copilot／全社検索</div><div class="v">${cp}</div></div>
-    <div class="ip-row"><div class="k">分類の扱い</div><div class="v">フォルダ＝用途・F分類（3階層以内）／部署・年度＝メタデータ列</div></div>
-    <div class="ip-row"><div class="k">設計原則</div><div class="v">サイト＝業務区分・ライブラリ＝機密レベル（J-26/J-27）。既定=L3／見せたくない→上げる・広く見せたい→下げる（J-20）</div></div>`;
+    <div class="ip-row"><div class="k">種類</div><div class="v">ドキュメント ライブラリ</div></div>
+    <div class="ip-row"><div class="k">アイテム数</div><div class="v">${rows.length} 件</div></div>
+    <div class="ip-row"><div class="k">サイト</div><div class="v">${site.name}</div></div>
+    <div class="ip-row"><div class="k">更新日時</div><div class="v">2026年7月22日</div></div>`;
 }
 
 function selSite(id){ curSite=id; const vis=LIBS.filter(l=>l.site===id&&canSee(l)); const f=vis.find(l=>l.key==="l3")||vis[0]; curLib=f?f.key:""; fF="";fY="";openMenu=""; document.getElementById("q").value=""; render(); }
@@ -436,6 +422,7 @@ function setY(v){ fY=v; openMenu=""; render(); }
 function toggleInfo(){ infoOpen=!infoOpen; render(); }
 document.addEventListener("click", e=>{ if(!e.target.closest("th") && openMenu){ openMenu=""; render(); } });
 
+document.getElementById("avatar").textContent = me().av;
 render();
 </script>
 </body>
