@@ -160,132 +160,194 @@
 
 <script>
 /* ====== 設計書 v3.0 構成データ（7/22打合せ反映：サイト＝業務区分×ライブラリ＝機密レベル） ====== */
-const SITES = [
-  { id:"portal", short:"WX", name:"全社ポータル", color:"#0b3d91", dept:"管理本部", members:412, hub:true,
-    desc:"全サイトの入口・全社共有（規程・様式・通達）" },
-  { id:"gov",   short:"経", name:"経営ガバナンス",   color:"#5c2d91", dept:"管理本部", members:36, desc:"会議体・方針・計画" },
-  { id:"sales", short:"営", name:"顧客管理・営業",   color:"#0078d4", dept:"営業部",   members:74, desc:"顧客・見積・提案・営業報告" },
-  { id:"linen", short:"リ", name:"リネンサプライ",   color:"#038387", dept:"業務部",   members:52, desc:"受注・発注・加工・入荷" },
-  { id:"prod",  short:"生", name:"生産・品質",       color:"#217346", dept:"生産部",   members:88, desc:"生産計画・実績・改善・クレーム" },
-  { id:"iso",   short:"ISO",name:"ISO・認証管理",    color:"#00838f", dept:"ISO管理室", members:8, desc:"基準・ルール・教育訓練・認証" },
-  { id:"proc",  short:"調", name:"調達・購買",       color:"#ca5010", dept:"購買",     members:41, kobai:true,
-    desc:"取引先別×5分類（★購買兼任メンバー横串）" },
-  { id:"wps",   short:"改", name:"WPS推進（改善活動）", color:"#7a7574", dept:"WPS推進室", members:7, desc:"改善活動・購買" },
-  { id:"rnd",   short:"技", name:"技術・研究開発",   color:"#8764b8", dept:"技術部",   members:23, desc:"クレーム・開発・テーブル仕様" },
-  { id:"fin",   short:"財", name:"財務・会計",       color:"#986f0b", dept:"経理部",   members:18, desc:"会計期別・監査" },
-  { id:"hr",    short:"人", name:"人事・労務",       color:"#d13438", dept:"管理本部", members:21, desc:"採用・教育・勤怠" },
-  { id:"ga",    short:"総", name:"総務・施設",       color:"#498205", dept:"管理本部", members:19, desc:"施設・保険・SDS・安全衛生" },
-  { id:"it",    short:"情", name:"情報システム",     color:"#69797e", dept:"情報システム部", members:12, desc:"IT計画・手順・ヘルプデスク" },
-  { id:"svc",   short:"物", name:"物流・配送",       color:"#004e8c", dept:"サービス部", members:96, desc:"運行管理・シフト・業務指示" },
-  { id:"l5",    short:"L5", name:"L5_極秘（個別）",  color:"#c00000", dept:"個別指定", members:9, l5:true,
-    desc:"必要時に個別作成（対象者以外には存在も見えない）" },
-  { id:"poc",   short:"検", name:"検証サイト",       color:"#797775", dept:"DX・AI推進課", members:30, open:true, desc:"AI研修連動・検証用" },
-  { id:"arc",   short:"AR", name:"アーカイブ",       color:"#797775", dept:"情報システム部", members:412, open:true, ro:true, desc:"保存義務のみ・読み取り専用" },
+/* ==== v3.2 自動生成データ（ライブラリ＝業務カテゴリ） ==== */
+const SITE_BIZ = [
+  { id:"gov", short:"経", name:"経営・ガバナンス", color:"#5c2d91", dept:"管理本部", members:36 },
+  { id:"sales", short:"営", name:"顧客管理・営業", color:"#0078d4", dept:"営業部", members:74 },
+  { id:"linen", short:"リ", name:"リネンサプライ", color:"#038387", dept:"業務部", members:52 },
+  { id:"prod", short:"生", name:"生産・品質", color:"#217346", dept:"生産部", members:88 },
+  { id:"iso", short:"ISO", name:"ISO・認証管理", color:"#00838f", dept:"ISO管理室", members:8 },
+  { id:"proc", short:"調", name:"調達・購買", color:"#ca5010", dept:"購買", members:41,kobai:true },
+  { id:"wps", short:"改", name:"WPS推進（改善活動）", color:"#7a7574", dept:"WPS推進室", members:7 },
+  { id:"rnd", short:"技", name:"技術・研究開発", color:"#8764b8", dept:"技術部", members:23 },
+  { id:"fin", short:"財", name:"財務・会計", color:"#986f0b", dept:"経理部", members:18 },
+  { id:"hr", short:"人", name:"人事・労務", color:"#d13438", dept:"管理本部", members:21 },
+  { id:"ga", short:"総", name:"総務・施設", color:"#498205", dept:"管理本部", members:19 },
+  { id:"it", short:"情", name:"情報システム", color:"#69797e", dept:"情報システム部", members:12 },
+  { id:"svc", short:"物", name:"物流・配送", color:"#004e8c", dept:"サービス部", members:96 },
+];
+const LIBS_BIZ = [
+  { site:"gov", key:"gov0", lv:"L3", name:"経営会議・方針", sg:"SG-管理本部-Member" },
+  { site:"gov", key:"gov1", lv:"L3", name:"契約管理", sg:"SG-管理本部-Member" },
+  { site:"gov", key:"gov2", lv:"L3", name:"法対応", sg:"SG-管理本部-Member" },
+  { site:"gov", key:"gov3", lv:"L3", name:"就業規則管理", sg:"SG-管理本部-Member" },
+  { site:"gov", key:"gov4", lv:"L3", name:"知的財産", sg:"SG-管理本部-Member" },
+  { site:"gov", key:"gov5", lv:"L5", name:"紛争・訴訟", sg:"SG-L5-{案件}（個別指定）" },
+  { site:"gov", key:"gov6", lv:"L5", name:"M&A", sg:"SG-L5-{案件}（個別指定）" },
+  { site:"sales", key:"sales0", lv:"L3", name:"顧客管理", sg:"SG-営業部-Member" },
+  { site:"sales", key:"sales1", lv:"L3", name:"新規", sg:"SG-営業部-Member" },
+  { site:"sales", key:"sales2", lv:"L3", name:"受発注", sg:"SG-営業部-Member" },
+  { site:"sales", key:"sales3", lv:"L4", name:"管理業務", sg:"SG-営業部-Mgr" },
+  { site:"sales", key:"sales4", lv:"L3", name:"教育・週報", sg:"SG-営業部-Member" },
+  { site:"sales", key:"sales5", lv:"L3", name:"新規開発室", sg:"SG-営業部-Member" },
+  { site:"linen", key:"linen0", lv:"L3", name:"受注", sg:"SG-業務部-Member" },
+  { site:"linen", key:"linen1", lv:"L3", name:"発注", sg:"SG-業務部-Member" },
+  { site:"linen", key:"linen2", lv:"L3", name:"加工", sg:"SG-業務部-Member" },
+  { site:"linen", key:"linen3", lv:"L3", name:"入荷", sg:"SG-業務部-Member" },
+  { site:"prod", key:"prod0", lv:"L3", name:"生産計画", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod1", lv:"L3", name:"生産実績", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod2", lv:"L3", name:"能力・負荷管理", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod3", lv:"L3", name:"購買業務（発注）", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod4", lv:"L3", name:"購買業務（請求・支払）", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod5", lv:"L3", name:"資材・在庫管理", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod6", lv:"L3", name:"人員管理", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod7", lv:"L3", name:"労務管理", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod8", lv:"L3", name:"人材育成", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod9", lv:"L3", name:"検針記録", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod10", lv:"L3", name:"使用料・請求書", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod11", lv:"L4", name:"見積", sg:"SG-生産部-Mgr" },
+  { site:"prod", key:"prod12", lv:"L5", name:"管理監督者・業務報告書", sg:"SG-L5-{案件}（個別指定）" },
+  { site:"prod", key:"prod13", lv:"L3", name:"試験・品質記録", sg:"SG-生産部-Member" },
+  { site:"prod", key:"prod14", lv:"L4", name:"処方・基礎データ", sg:"SG-生産部-Mgr" },
+  { site:"iso", key:"iso0", lv:"L3", name:"基準・ルール", sg:"SG-ISO管理室-Member" },
+  { site:"iso", key:"iso1", lv:"L3", name:"教育・訓練", sg:"SG-ISO管理室-Member" },
+  { site:"iso", key:"iso2", lv:"L3", name:"広報活動", sg:"SG-ISO管理室-Member" },
+  { site:"iso", key:"iso3", lv:"L3", name:"外部派遣", sg:"SG-ISO管理室-Member" },
+  { site:"iso", key:"iso4", lv:"L4", name:"認証基準・規格", sg:"SG-ISO管理室-Mgr" },
+  { site:"iso", key:"iso5", lv:"L4", name:"組織改定", sg:"SG-ISO管理室-Mgr" },
+  { site:"iso", key:"iso6", lv:"L4", name:"予算", sg:"SG-ISO管理室-Mgr" },
+  { site:"iso", key:"iso7", lv:"L4", name:"日常運営・計画", sg:"SG-ISO管理室-Mgr" },
+  { site:"proc", key:"proc0", lv:"L3", name:"リネン", sg:"SG-購買メンバー（横串・兼任者全員）" },
+  { site:"proc", key:"proc1", lv:"L3", name:"資材", sg:"SG-購買メンバー（横串・兼任者全員）" },
+  { site:"proc", key:"proc2", lv:"L3", name:"機械部品", sg:"SG-購買メンバー（横串・兼任者全員）" },
+  { site:"proc", key:"proc3", lv:"L3", name:"車両", sg:"SG-購買メンバー（横串・兼任者全員）" },
+  { site:"proc", key:"proc4", lv:"L3", name:"その他", sg:"SG-購買メンバー（横串・兼任者全員）" },
+  { site:"proc", key:"proc5", lv:"L4", name:"見積・価格交渉", sg:"SG-購買-Mgr" },
+  { site:"wps", key:"wps0", lv:"L3", name:"購買", sg:"SG-WPS推進室-Member" },
+  { site:"wps", key:"wps1", lv:"L4", name:"見積", sg:"SG-WPS推進室-Mgr" },
+  { site:"rnd", key:"rnd0", lv:"L3", name:"開発", sg:"SG-技術部-Member" },
+  { site:"rnd", key:"rnd1", lv:"L3", name:"クレーム対応", sg:"SG-技術部-Member" },
+  { site:"rnd", key:"rnd2", lv:"L3", name:"研究・試作", sg:"SG-技術部-Member" },
+  { site:"fin", key:"fin0", lv:"L3", name:"会計資料", sg:"SG-経理部-Member" },
+  { site:"fin", key:"fin1", lv:"L3", name:"経理基準", sg:"SG-経理部-Member" },
+  { site:"fin", key:"fin2", lv:"L4", name:"役員会・株主総会", sg:"SG-経理-{事業会社}（担当者限定）" },
+  { site:"fin", key:"fin3", lv:"L4", name:"契約・債権（担当者限定）", sg:"SG-経理-{事業会社}（担当者限定）" },
+  { site:"hr", key:"hr0", lv:"L3", name:"組織図", sg:"SG-管理本部-Member" },
+  { site:"hr", key:"hr1", lv:"L4", name:"給与改定・賞与・人事考課", sg:"SG-管理本部-Mgr" },
+  { site:"hr", key:"hr2", lv:"L3", name:"新卒採用", sg:"SG-管理本部-Member" },
+  { site:"hr", key:"hr3", lv:"L3", name:"中途社員", sg:"SG-管理本部-Member" },
+  { site:"hr", key:"hr4", lv:"L4", name:"中途採用_採用申請", sg:"SG-管理本部-Mgr" },
+  { site:"hr", key:"hr5", lv:"L3", name:"パート・アルバイト", sg:"SG-管理本部-Member" },
+  { site:"hr", key:"hr6", lv:"L3", name:"人事運営", sg:"SG-管理本部-Member" },
+  { site:"hr", key:"hr7", lv:"L4", name:"人事情報", sg:"SG-人給メンバー" },
+  { site:"hr", key:"hr8", lv:"L4", name:"給与情報", sg:"SG-人給メンバー" },
+  { site:"hr", key:"hr9", lv:"L4", name:"就労情報", sg:"SG-管理本部-Mgr" },
+  { site:"hr", key:"hr10", lv:"L4", name:"労務管理", sg:"SG-労務メンバー" },
+  { site:"hr", key:"hr11", lv:"L4", name:"サービスドライバー管理", sg:"SG-労務メンバー" },
+  { site:"hr", key:"hr12", lv:"L4", name:"健康診断・保健指導", sg:"SG-管理本部-Mgr" },
+  { site:"hr", key:"hr13", lv:"L5", name:"役員報酬", sg:"SG-L5-{案件}（個別指定）" },
+  { site:"ga", key:"ga0", lv:"L3", name:"各種保険", sg:"SG-管理本部-Member" },
+  { site:"ga", key:"ga1", lv:"L3", name:"予算", sg:"SG-管理本部-Member" },
+  { site:"ga", key:"ga2", lv:"L3", name:"各種行事", sg:"SG-管理本部-Member" },
+  { site:"ga", key:"ga3", lv:"L3", name:"行政対応", sg:"SG-管理本部-Member" },
+  { site:"ga", key:"ga4", lv:"L3", name:"設備営繕", sg:"SG-管理本部-Member" },
+  { site:"ga", key:"ga5", lv:"L3", name:"福利厚生", sg:"SG-管理本部-Member" },
+  { site:"ga", key:"ga6", lv:"L3", name:"広報", sg:"SG-管理本部-Member" },
+  { site:"ga", key:"ga7", lv:"L3", name:"総務運用", sg:"SG-管理本部-Member" },
+  { site:"ga", key:"ga8", lv:"L3", name:"安全衛生", sg:"SG-管理本部-Member" },
+  { site:"ga", key:"ga9", lv:"L4", name:"健康管理", sg:"SG-管理本部-Mgr" },
+  { site:"it", key:"it0", lv:"L3", name:"開発", sg:"SG-情報システム部-Member" },
+  { site:"it", key:"it1", lv:"L3", name:"インフラ", sg:"SG-情報システム部-Member" },
+  { site:"it", key:"it2", lv:"L3", name:"運用", sg:"SG-情報システム部-Member" },
+  { site:"it", key:"it3", lv:"L4", name:"IT企画・戦略", sg:"SG-情報システム部-Mgr" },
+  { site:"it", key:"it4", lv:"L3", name:"部署間共有（基幹系データ出力）", sg:"SG-全社-閲覧（データ出力・確認要）" },
+  { site:"svc", key:"svc0", lv:"L3", name:"運行管理", sg:"SG-サービス部-Member" },
+  { site:"svc", key:"svc1", lv:"L3", name:"シフト", sg:"SG-サービス部-Member" },
+  { site:"svc", key:"svc2", lv:"L3", name:"業務指示書", sg:"SG-サービス部-Member" },
+  { site:"svc", key:"svc3", lv:"L3", name:"車輌・走行距離", sg:"SG-サービス部-Member" },
+  { site:"svc", key:"svc4", lv:"L4", name:"エリア会議・予算", sg:"SG-サービス部-Mgr" },
+];
+const FOLDERS = {"gov": {"gov0": ["会議体","経営方針","中期計画","年度計画"],"gov1": ["契約書管理","内容審査","契約書式管理"],"gov2": ["法令改正対応","法定手続管理","法律相談"],"gov3": ["就業規則"],"gov4": ["知的財産管理"],"gov5": ["紛争・訴訟管理"],"gov6": ["M&A調査"]},"sales": {"sales0": ["見積","提案資料","顧客資料","棚卸","契約","クレーム","帳票"],"sales1": ["見積","提案資料"],"sales2": ["発注書","受注書"],"sales3": ["会議資料","更新資料","予算"],"sales4": ["教育資料","週報"],"sales5": ["マーケティング","プロスペクト","顧客管理（見積／提案資料）"]},"linen": {"linen0": ["受注データ","受注確認"],"linen1": ["発注データ"],"linen2": ["加工指示","仕上データ"],"linen3": ["入荷記録"]},"prod": {"prod0": ["日次","月次"],"prod1": ["日次","月次"],"prod2": ["処理能力"],"prod3": ["注文書"],"prod4": ["支払申請"],"prod5": ["資材","在庫"],"prod6": ["配置・計画"],"prod7": ["勤怠"],"prod8": ["教育・訓練","スキルマップ"],"prod9": ["電気","水道","ガス","蒸気"],"prod10": ["電気","水道","ガス"],"prod11": ["設備","機械部品","建物","洗剤","資材・消耗品","ユーティリティ・エネルギー"],"prod12": ["業務報告書"],"prod13": ["試験成績書","処方（※基礎データはL4）"],"prod14": ["処方マスタ","基礎データ"]},"iso": {"iso0": ["マニュアル（部内管理）","文書類（部内管理）","記録類・フォーマット","ロゴマーク"],"iso1": ["新人教育","中途社員研修","勉強会（社内）","勉強会（社外）","用語集","技能実習評価試験"],"iso2": ["取材"],"iso3": ["実地調査員業務","試験監督業務"],"iso4": ["ISO規格","衛生基準認定制度","寝具類洗濯業務","RAL規格","特許管理","資格管理"],"iso5": ["組織図"],"iso6": ["年間予算","審査費用"],"iso7": ["ISO管理室会議資料"]},"proc": {"proc0": ["取引先別"],"proc1": ["取引先別"],"proc2": ["取引先別"],"proc3": ["取引先別"],"proc4": ["取引先別"],"proc5": ["見積","仕入価格交渉","与信"]},"wps": {"wps0": ["仕入支払","請求書","注文書"],"wps1": ["見積"]},"rnd": {"rnd0": ["設計","仕様書","テーブル仕様"],"rnd1": ["取引先クレーム","顧客クレーム"],"rnd2": ["試作記録"]},"fin": {"fin0": ["月次決算","年次決算","税務申告","資金管理","売上伝票","仕入伝票","支払管理","在庫管理","貯蔵品","固定資産","リース","予算管理"],"fin1": ["法令関連","会計基準","経理関連規定","現場運用マニュアル"],"fin2": ["役員会資料","株主総会","取締役会"],"fin3": ["金銭消費貸借契約","リース契約","委任契約","業務委託契約","雇用契約","税務関連届出","請求回収管理","税務調査対応","倒産対応","信用調査"]},"hr": {"hr0": ["組織改訂依頼","昇格・昇進・降格管理","組織図作成","辞令管理"],"hr1": ["人事考課","手当管理","情報収集","賞与算定"],"hr2": ["採用計画","媒体管理","説明会・イベント","選考管理","試験・面接管理","内定者対応","入社手続","寮管理","研修管理","配属管理","定着支援"],"hr3": ["採用判断","媒体管理","選考・面接管理","条件設定","入社手続","入社後管理","研修管理","研修支援","紹介会社・求人票管理"],"hr4": ["採用申請"],"hr5": ["選考・面接管理","入社手続","勤怠管理","契約管理","契約更新","退職管理","配属管理","嘱託契約","派遣・紹介契約","技能実習生管理","研修・試験管理","費用・請求管理","学校連携","紹介制度","評価管理"],"hr6": ["社会保険・労務","助成金申請","報告書作成","人事情報システム","会議運営","ダイバーシティ推進","人材育成","福利厚生","調査対応","拠点支援","採用支援","回覧管理","人員管理"],"hr7": ["組織情報管理","発令管理","雇用条件管理","交通費管理","給与事前準備"],"hr8": ["給与計算","部門別集計","請求処理","支払処理","賞与管理","退職金管理","基本給管理","年末調整","税務対応","マスタ管理"],"hr9": ["勤務コード管理","承認経路管理","勤怠データ活用","休暇管理","残業管理","勤怠チェック","法令対応","労使協定","連携設定"],"hr10": ["労務トラブル対応","ハラスメント対応","職場環境把握","教育・啓発","規律対応","労働時間管理","特命対応"],"hr11": ["勤怠管理","責任者教育"],"hr12": ["健康診断","保健指導","メンタルヘルス"],"hr13": ["役員報酬"]},"ga": {"ga0": ["損害保険管理","団体保険管理","海外保険管理","団体扱い保険","自動車保険管理","火災保険管理"],"ga1": ["採用費管理","福利厚生費管理","管理費管理","販売促進費管理"],"ga2": ["記念行事","社内行事","部門行事","表彰","全体行事","会議運営"],"ga3": ["規程管理","制度対応","環境対応","官公庁調査","労災対応"],"ga4": ["駐車場管理","建屋設備管理","オフィス管理","寮管理","通信設備管理","固定資産管理","共用部管理","IT設備管理","OA機器管理","セキュリティ管理","車両・輸送管理","設備更新計画"],"ga5": ["慶事対応","寮管理","育児支援","福利設備管理","親睦会運営","保養施設","クラブ活動","慶弔対応","被服管理","休日管理","物品手配","社内広報"],"ga6": ["会社案内制作","配布物制作","年賀状対応","広告管理","Web管理","採用広報","制作物管理","取材対応","社外行事","営業支援","トップメッセージ","問い合わせ対応","外部団体対応"],"ga7": ["金庫管理","配送管理","社内便管理","支払管理","宿直管理","購買管理","備品管理","昼食対応","不動産管理","危機管理","衛生対応","オフィス運用","対外対応","休暇管理"],"ga8": ["研修管理","届出管理","選解任管理","消防管理","予防接種","感染症対策","備蓄管理"],"ga9": ["産業医管理","健康診断","保健指導","メンタルヘルス","健康対策"]},"it": {"it0": ["要件定義","見積・契約","設計・構築","テスト","プロジェクト管理"],"it1": ["要件定義","見積・契約","設計・構築","テスト","プロジェクト管理"],"it2": ["共通・方針","日常運用管理","監視","バックアップ管理","パッチ管理","運用報告","インシデント管理","問題管理","変更管理","リリース管理","構成管理","セキュリティ管理","教育"],"it3": ["中長期計画","年度計画"],"it4": ["売上","請求","入金","仕入","在庫","顧客","商品","不良","引取","払出","伝票","仕上","再洗","未引取","収支"]},"svc": {"svc0": ["運行記録","日報"],"svc1": ["勤務シフト"],"svc2": ["指示書"],"svc3": ["車輌管理","走行距離"],"svc4": ["エリア会議","予算","稼働率"]}};
+const FILES_BIZ = [
+  ["gov","gov0","2026年度_部門方針.pptx","fp","F01","L3","管理本部","2026","河合 一夫"],
+  ["gov","gov1","業務委託契約_○○社.pdf","fpdf","F03","L3","管理本部","2026","法務 担当"],
+  ["gov","gov5","紛争案件_2026.pdf","fpdf","F03","L5","管理本部","2026","（個別指定）"],
+  ["sales","sales0","20260610_JWマリオットホテル東京_見積.xlsx","fx","F02","L3","営業部","2026","中道 一史"],
+  ["sales","sales0","20260620_ザセレスティン銀座_提案書.pptx","fp","F02","L3","営業部","2026","鈴木 部長"],
+  ["sales","sales2","20260615_OMO7横浜_受注書.xlsx","fx","F02","L3","営業部","2026","山崎 大介"],
+  ["sales","sales3","2026上期_エリア会議_予算実績.pptx","fp","F02","L4","営業部","2026","鈴木 部長"],
+  ["sales","sales3","顧客別単価一覧_2026.xlsx","fx","F02","L4","営業部","2026","営業 管理職"],
+  ["linen","linen0","20260616_払出データ_加工前.xlsx","fx","F08","L3","業務部","2026","水谷 部長"],
+  ["linen","linen2","20260616_払出データ_加工後.xlsx","fx","F08","L3","業務部","2026","業務 担当"],
+  ["prod","prod1","2026W25_食品UF不良率_週次.xlsx","fx","F06","L3","生産部","2026","内田 課長"],
+  ["prod","prod11","設備見積_2026.xlsx","fx","F05","L4","生産部","2026","生産 管理職"],
+  ["prod","prod12","業務報告書_2026上期.xlsx","fx","F06","L5","生産部","2026","管理監督者"],
+  ["prod","prod13","製品X_ロット2308_試験成績書.xlsx","fx","F06","L3","生産部","2026","品質 担当"],
+  ["prod","prod14","処方マスタ_洗剤配合.xlsx","fx","F05","L4","生産部","2026","処方 管理者"],
+  ["iso","iso0","ISO9001_品質マニュアル_rev12.docx","fw","F14","L3","ISO管理室","2026","ISO 担当"],
+  ["iso","iso1","20260410_技能実習評価試験_記録.xlsx","fx","F14","L3","ISO管理室","2026","ISO 担当"],
+  ["iso","iso4","RAL規格_認証取得計画.xlsx","fx","F14","L4","ISO管理室","2026","ISO 室長"],
+  ["iso","iso6","2026_審査費用_予算.xlsx","fx","F14","L4","ISO管理室","2026","ISO 室長"],
+  ["proc","proc0","取引先リスト_リネン資材.xlsx","fx","F04","L3","購買","2026","川瀬"],
+  ["proc","proc5","仕入価格交渉_2026下期方針.xlsx","fx","F04","L4","購買","2026","購買 管理職"],
+  ["wps","wps0","20260605_仕入支払_請求書控え.xlsx","fx","F04","L3","WPS推進室","2026","WPS 担当"],
+  ["wps","wps1","設備投資_見積比較.xlsx","fx","F04","L4","WPS推進室","2026","WPS 室長"],
+  ["rnd","rnd0","20260403_テーブル仕様書_M.docx","fw","F14","L3","技術部","2026","上田 室長"],
+  ["fin","fin0","202606_関東エリア_月次実績.xlsx","fx","F10","L3","経理部","2026","安部 次長"],
+  ["fin","fin1","経費精算マニュアル.pdf","fpdf","F10","L3","経理部","2026","安部 次長"],
+  ["fin","fin3","監査法人往査_提出資料一式.xlsx","fx","F10","L4","経理部","2026","安部 次長"],
+  ["hr","hr2","27卒_採用面接シート.docx","fw","F09","L3","管理本部","2026","採用 担当"],
+  ["hr","hr8","給与計算_202606.xlsx","fx","F09","L4","管理本部","2026","人給 担当"],
+  ["hr","hr12","健康診断用名簿.xlsx","fx","F09","L4","管理本部","2026","人給 担当"],
+  ["hr","hr13","役員報酬の明細.xlsx","fx","F09","L5","管理本部","2026","（個別指定）"],
+  ["ga","ga6","会社案内2026.pdf","fpdf","F13","L3","管理本部","2026","広報 担当"],
+  ["ga","ga8","防災訓練のご案内_2026.pdf","fpdf","F12","L3","管理本部","2026","総務 担当"],
+  ["it","it0","システム要件定義書_kintone.docx","fw","F11","L3","情報システム部","2026","情シス 担当"],
+  ["it","it2","kintone_操作手順書.pdf","fpdf","F11","L3","情報システム部","2026","堀口 次長"],
+  ["it","it4","payout_20260616.csv","fx","F11","L3","情報システム部","2026","基幹系 出力"],
+  ["svc","svc0","添乗指導チェックポイント_追突事故防止.docx","fw","F07","L3","サービス部","2026","中垣内 部長"],
 ];
 
-/* 各業務サイト共通：L2_全社共有／L3_部署業務（既定）／L4_管理職 の標準3点セット */
-const LIBS = [];
-for (const s of SITES) {
-  if (s.hub) { LIBS.push({ site:s.id, key:"l2", lv:"L2", name:"全社共有（規程・様式・通達）", sg:"SG-全社-閲覧（投稿＝管理本部）" }); continue; }
-  if (s.l5)  { LIBS.push({ site:s.id, key:"l5", lv:"L5", name:"役員報酬・訴訟・事故映像（案件別）", sg:"SG-L5-{案件}（個別指定のみ）" }); continue; }
-  if (s.open){ LIBS.push({ site:s.id, key:"main", lv:"—", name:s.id==="poc"?"poc-営業部（検証用）":"アーカイブ（部署別）", sg:s.id==="poc"?"検証メンバー":"SG-全社-閲覧（読み取り専用）" }); continue; }
-  const d = s.dept;
-  LIBS.push({ site:s.id, key:"l2", lv:"L2", name:"L2_全社共有", sg:`SG-全社-閲覧（投稿＝SG-${d}-Member）` });
-  LIBS.push({ site:s.id, key:"l3", lv:"L3", name:"L3_部署業務（既定）", sg: s.kobai ? "SG-購買メンバー（横串・兼任者全員）" : `SG-${d}-Member（サイト既定・継承）` });
-  LIBS.push({ site:s.id, key:"l4", lv:"L4", name:"L4_管理職", sg:`SG-${d}-Mgr（当該業務の管理職のみ）` });
-}
+/* サイト説明（ナビ/ヘッダー用） */
+const DESC = {
+  gov:"会議体・方針・計画＋法務", sales:"顧客・見積・提案・営業報告", linen:"受注・発注・加工・入荷",
+  prod:"生産計画・実績・改善・品質", iso:"基準・ルール・教育訓練・認証", proc:"取引先別×5分類（購買横串）",
+  wps:"改善活動・購買", rnd:"開発・クレーム・研究", fin:"事業会社×会計期・監査",
+  hr:"採用・給与・労務・人事考課", ga:"施設・保険・行事・安全衛生", it:"開発・インフラ・運用・基幹系データ",
+  svc:"運行管理・シフト・車輌" };
 
-/* site, key, name, icon, F, level, 主管, 年度, 更新者 */
+/* SITES＝ポータル＋業務13＋L5＋検証＋アーカイブ */
+const SITES = [
+  { id:"portal", short:"WX", name:"全社ポータル", color:"#0b3d91", dept:"管理本部", members:412, hub:true, desc:"全サイトの入口・全社共有（規程・様式・通達）" },
+  ...SITE_BIZ.map(s=>({ ...s, desc:DESC[s.id]||s.name })),
+  { id:"l5", short:"L5", name:"L5_極秘（個別）", color:"#c00000", dept:"個別指定", members:9, l5:true, desc:"必要時に個別作成（対象者以外には存在も見えない）" },
+  { id:"poc", short:"検", name:"検証サイト", color:"#797775", dept:"DX・AI推進課", members:30, open:true, desc:"AI研修連動・検証用" },
+  { id:"arc", short:"AR", name:"アーカイブ", color:"#797775", dept:"情報システム部", members:412, open:true, ro:true, desc:"保存義務のみ・読み取り専用" },
+];
+
+/* LIBS＝各業務サイトに L2_全社共有 を追加＋業務カテゴリ（LIBS_BIZ）＋ポータル/L5/検証/アーカイブ */
+const LIBS = [];
+LIBS.push({ site:"portal", key:"l2", lv:"L2", name:"全社共有（規程・様式・通達）", sg:"SG-全社-閲覧（投稿＝管理本部）" });
+for (const s of SITE_BIZ) {
+  LIBS.push({ site:s.id, key:s.id+"_l2", lv:"L2", name:"L2_全社共有", sg:`SG-全社-閲覧（投稿＝SG-${s.dept}-Member）` });
+  for (const l of LIBS_BIZ.filter(l=>l.site===s.id)) LIBS.push(l);
+}
+LIBS.push({ site:"l5", key:"l5", lv:"L5", name:"役員報酬・訴訟・事故映像（案件別）", sg:"SG-L5-{案件}（個別指定のみ）" });
+LIBS.push({ site:"poc", key:"main", lv:"—", name:"poc-営業部（検証用）", sg:"検証メンバー" });
+LIBS.push({ site:"arc", key:"main", lv:"—", name:"アーカイブ（部署別）", sg:"SG-全社-閲覧（読み取り専用）" });
+
+/* FILES＝業務データ（FILES_BIZ）＋ポータル/L5/検証/アーカイブ */
 const FILES = [
   ["portal","l2","就業規則・規程原本.pdf","fpdf","F13","L2","管理本部","2026","津曲 雄治"],
   ["portal","l2","20260401_稟議書フォーマット.docx","fw","F13","L2","管理本部","2026","津曲 雄治"],
-  ["portal","l2","内線番号一覧.xlsx","fx","F13","L2","管理本部","2026","総務 担当"],
   ["portal","l2","会社案内2026.pdf","fpdf","F13","L2","管理本部","2026","広報 担当"],
-
-  ["gov","l2","2026年度_会社方針（全社説明版）.pptx","fp","F01","L2","管理本部","2026","河合 一夫"],
-  ["gov","l3","2026年度_部門方針.pptx","fp","F01","L3","管理本部","2026","河合 一夫"],
-  ["gov","l4","役員会_審議資料_2026Q2.pptx","fp","F01","L4","管理本部","2026","経営企画"],
-
-  ["sales","l2","20260601_営業→生産_連携依頼シート.xlsx","fx","F02","L2","営業部","2026","中道 一史"],
-  ["sales","l3","20260610_JWマリオットホテル東京_見積.xlsx","fx","F02","L3","営業部","2026","中道 一史"],
-  ["sales","l3","20260615_OMO7横浜_受注書.xlsx","fx","F02","L3","営業部","2026","山崎 大介"],
-  ["sales","l3","20260620_ザセレスティン銀座_提案書.pptx","fp","F02","L3","営業部","2026","鈴木 部長"],
-  ["sales","l3","2025年度_京都第1営業_エリア会議資料.xlsx","fx","F02","L3","営業部","2025","京都 営業"],
-  ["sales","l4","2026上期_エリア会議_予算実績.pptx","fp","F02","L4","営業部","2026","鈴木 部長"],
-  ["sales","l4","顧客別単価一覧_2026.xlsx","fx","F02","L4","営業部","2026","鈴木 部長"],
-  ["sales","l4","与信限度額管理表.xlsx","fx","F02","L4","営業部","2026","営業 管理職"],
-
-  ["linen","l2","リネン取扱いガイド（全社向け）.pdf","fpdf","F08","L2","業務部","2026","水谷 部長"],
-  ["linen","l3","20260616_払出データ_加工前.xlsx","fx","F08","L3","業務部","2026","水谷 部長"],
-  ["linen","l3","20260616_払出データ_加工後.xlsx","fx","F08","L3","業務部","2026","業務 担当"],
-
-  ["prod","l2","20260701_品質月報（全社共有版）.pdf","fpdf","F06","L2","生産部","2026","内田 課長"],
-  ["prod","l3","製品X_ロット2308_試験成績書.xlsx","fx","F06","L3","生産部","2026","品質 担当"],
-  ["prod","l3","2026W25_食品UF不良率_週次.xlsx","fx","F06","L3","生産部","2026","内田 課長"],
-  ["prod","l3","2026W25_仕上データ_福岡以外.xlsx","fx","F05","L3","生産部","2026","生産 担当"],
-  ["prod","l4","処方マスタ_洗剤配合.xlsx","fx","F05","L4","生産部","2026","処方 管理者"],
-
-  ["iso","l3","ISO9001_品質マニュアル_rev12.docx","fw","F14","L3","ISO管理室","2026","ISO 担当"],
-  ["iso","l3","20260410_技能実習評価試験_記録.xlsx","fx","F14","L3","ISO管理室","2026","ISO 担当"],
-  ["iso","l4","RAL規格_認証取得計画.xlsx","fx","F14","L4","ISO管理室","2026","ISO 室長"],
-  ["iso","l4","2026_審査費用_予算.xlsx","fx","F14","L4","ISO管理室","2026","ISO 室長"],
-
-  ["proc","l2","購買申請の手引き.pdf","fpdf","F04","L2","購買","2026","川瀬"],
-  ["proc","l3","取引先リスト_リネン資材.xlsx","fx","F04","L3","購買","2026","川瀬"],
-  ["proc","l4","仕入価格交渉_2026下期方針.xlsx","fx","F04","L4","購買","2026","購買 管理職"],
-
-  ["wps","l3","20260605_仕入支払_請求書控え.xlsx","fx","F04","L3","WPS推進室","2026","WPS 担当"],
-  ["wps","l3","20260610_注文書_○○設備.pdf","fpdf","F04","L3","WPS推進室","2026","WPS 担当"],
-  ["wps","l4","設備投資_見積比較.xlsx","fx","F04","L4","WPS推進室","2026","WPS 室長"],
-
-  ["rnd","l2","技術ニュースレター_2026夏号.pdf","fpdf","F14","L2","技術部","2026","上田 室長"],
-  ["rnd","l3","20260403_テーブル仕様書_M.docx","fw","F14","L3","技術部","2026","上田 室長"],
-
-  ["fin","l2","経費精算マニュアル.pdf","fpdf","F10","L2","経理部","2026","安部 次長"],
-  ["fin","l3","202606_関東エリア_月次実績.xlsx","fx","F10","L3","経理部","2026","安部 次長"],
-  ["fin","l4","監査法人往査_提出資料一式.xlsx","fx","F10","L4","経理部","2026","安部 次長"],
-
-  ["hr","l2","20260615_人事異動のお知らせ.pdf","fpdf","F09","L2","管理本部","2026","人事 担当"],
-  ["hr","l3","27卒_採用面接シート.docx","fw","F09","L3","管理本部","2026","採用 担当"],
-  ["hr","l4","健康診断用名簿.xlsx","fx","F09","L4","管理本部","2026","人給 担当"],
-
-  ["ga","l2","防災訓練のご案内_2026.pdf","fpdf","F12","L2","管理本部","2026","総務 担当"],
-  ["ga","l3","SDS一覧_2026.xlsx","fx","F12","L3","管理本部","2026","総務 担当"],
-
-  ["it","l2","M365利用ガイド（全社員向け）.pdf","fpdf","F11","L2","情報システム部","2026","堀口 次長"],
-  ["it","l3","kintone_操作手順書.pdf","fpdf","F11","L3","情報システム部","2026","堀口 次長"],
-
-  ["svc","l2","安全運転10か条.pdf","fpdf","F07","L2","サービス部","2026","中垣内 部長"],
-  ["svc","l3","添乗指導チェックポイント_追突事故防止.docx","fw","F07","L3","サービス部","2026","中垣内 部長"],
-  ["svc","l4","エリア会議_予算・稼働率.xlsx","fx","F07","L4","サービス部","2026","サービス 管理職"],
-
-  ["l5","l5","生産部_業務報告書_2026上期.xlsx","fx","F06","L5","生産部","2026","（個別指定）"],
+  ...FILES_BIZ,
   ["l5","l5","役員報酬の明細.xlsx","fx","F09","L5","管理本部","2026","（個別指定）"],
   ["l5","l5","デューデリジェンス資料.pdf","fpdf","F03","L5","管理本部","2026","（個別指定）"],
   ["l5","l5","ドライブレコーダー記録_20260410.mp4","fmp4","F07","L5","サービス","2026","（個別指定）"],
-
   ["poc","main","検証用サンプル_プロンプト集.docx","fw","—","—","DX推進","2026","田村 健人"],
   ["arc","main","2015年度_旧営業報告.zip","fzip","F02","—","営業部","2015","—"],
 ];
-
-/* 各L3/L4ライブラリのフォルダ第1階層＝各部署ヒアリングの業務分類（設計書シート4b） */
-const FOLDERS = {
-  sales:{ l3:["顧客管理","新規","受発注","管理業務"], l4:["管理業務（会議・更新・予算）","新規開発室"] },
-  prod: { l3:["生産計画","生産実績","能力・負荷管理","購買業務（発注）","購買業務（請求・支払）","資材・在庫管理","人員管理","労務管理","人材育成","検針記録","使用料・請求書"],
-          l4:["見積（設備／機械部品／建物／洗剤／資材・消耗品／ユーティリティ）"] },
-  iso:  { l3:["基準・ルール","教育・訓練","広報活動","外部派遣"], l4:["基準・ルール（ISO規格ほか）","組織改定","予算","日常運営・計画"] },
-  proc: { l3:["リネン","資材","機械部品","車両","その他"], l4:["仕入価格交渉・与信"] },
-  wps:  { l3:["05_購買（仕入支払／請求書／注文書）"], l4:["05_購買（見積）"] },
-  rnd:  { l3:["開発","インフラ","運用"] },
-  fin:  { l3:["会計資料","経理基準"], l4:["担当者限定（契約・税務・回収）"] },
-  gov:  { l3:["契約管理","法対応","就業規則管理","知的財産"] },
-  hr:   { l3:["人事情報","採用（新卒／中途／パート）","就労情報","人事運営"],
-          l4:["給与改定・賞与・人事考課","採用申請","給与情報","労務管理","健康診断・保健指導"] },
-  ga:   { l3:["各種保険","予算","各種行事","行政対応","設備営繕","福利厚生","広報","総務運用"], l4:["安全衛生","産業医管理"] },
-  it:   { l3:["開発","インフラ","運用"] },
-  svc:  { l3:["運行管理","シフト","業務指示書","車輌・走行距離"], l4:["エリア会議","予算","稼働率"] },
-  linen:{ l3:["受注","発注","加工","入荷"] },
-};
 
 /* ペルソナ：所属＝営業部（購買兼任）。mgr=管理職、exec=役員・個別指定 */
 const PERSONA = {
@@ -293,33 +355,35 @@ const PERSONA = {
   L4:{ dept:"営業部", kobai:true,  mgr:true,  exec:false, av:"管" },
   L5:{ dept:"営業部", kobai:true,  mgr:true,  exec:true,  av:"役" },
 };
-let curSite="sales", curLib="l3", fF="", fY="", openMenu="", infoOpen=false;
+let curSite="sales", curLib="sales0", fF="", fY="", openMenu="", infoOpen=false;
 
-/* 表示ユーザー：URLの ?user=L3|L4|L5 で指定。右上アバターのクリックで切替（画面上の説明表示は無し） */
+/* 表示ユーザー：URLの ?user=L3|L4|L5 で指定。右上アバターのクリックで切替 */
 let curPersona = (new URLSearchParams(location.search).get("user")||"L3").toUpperCase();
 if(!PERSONA[curPersona]) curPersona = "L3";
 const me = () => PERSONA[curPersona];
 const isMySite = s => s.dept===me().dept || (s.kobai && me().kobai);
 
-/* 見える／見えない（本番＝権限のないものはリンクごと非表示） */
+/* 見える／見えない（本番＝権限のないものはリンクごと非表示）。機密レベルはライブラリ単位 */
 function canSee(l){
   const s = SITES.find(x=>x.id===l.site), p = me();
   if (p.exec) return true;
-  if (s.l5) return false;                       // L5：対象者以外は存在も見えない（J-30）
-  if (s.open || s.hub) return true;             // ポータル・検証・アーカイブ
-  if (l.key==="l2") return true;                // L2＝全社閲覧
-  if (l.key==="l3") return isMySite(s);         // L3＝自部署（購買は兼任横串・J-29）
-  if (l.key==="l4") return isMySite(s) && p.mgr;// L4＝当該業務の管理職のみ
+  if (s.l5 || l.lv==="L5") return false;          // L5：対象者以外は存在も見えない（J-30/J-35）
+  if (s.open || s.hub) return true;
+  if (l.lv==="L2") return true;                   // L2＝全社閲覧
+  const mine = s.dept===p.dept || (s.kobai && p.kobai);
+  if (l.lv==="L3") return mine;                   // L3＝自部署（購買は兼任横串）
+  if (l.lv==="L4") return mine && p.mgr;          // L4＝当該業務の管理職のみ
   return false;
 }
 /* 更新できるか（投稿）／閲覧のみ */
 function canEdit(l){
   const s = SITES.find(x=>x.id===l.site), p = me();
-  if (s.ro) return false;                       // アーカイブ＝読み取り専用
-  if (s.l5) return p.exec;
-  if (s.id==="poc") return true;
-  if (l.key==="l2") return s.dept===p.dept || (s.hub && false);
-  return isMySite(s) && (l.key!=="l4" || p.mgr);
+  if (s.ro) return false;
+  if (s.open) return true;
+  if (l.lv==="L5") return p.exec;
+  if (l.lv==="L2") return s.dept===p.dept;
+  const mine = s.dept===p.dept || (s.kobai && p.kobai);
+  return mine && (l.lv!=="L4" || p.mgr);
 }
 const siteVisible = s => LIBS.some(l=>l.site===s.id && canSee(l));
 
@@ -331,7 +395,7 @@ function cyclePersona(){
 function onPersona(){
   document.getElementById("avatar").textContent = me().av;
   const s = SITES.find(x=>x.id===curSite);
-  if(!s || !siteVisible(s)){ curSite="sales"; curLib="l3"; }
+  if(!s || !siteVisible(s)){ curSite="sales"; curLib=""; }
   render();
 }
 
@@ -452,7 +516,7 @@ function render(){
     <div class="ip-row"><div class="k">更新日時</div><div class="v">2026年7月22日</div></div>`;
 }
 
-function selSite(id){ curSite=id; const vis=LIBS.filter(l=>l.site===id&&canSee(l)); const f=vis.find(l=>l.key==="l3")||vis[0]; curLib=f?f.key:""; fF="";fY="";openMenu=""; document.getElementById("q").value=""; render(); }
+function selSite(id){ curSite=id; const vis=LIBS.filter(l=>l.site===id&&canSee(l)); const f=vis.find(l=>l.lv==="L3")||vis[0]; curLib=f?f.key:""; fF="";fY="";openMenu=""; document.getElementById("q").value=""; render(); }
 function selLib(k){ curLib=k; fF="";fY="";openMenu=""; render(); }
 function menu(m){ openMenu = openMenu===m?"":m; render(); }
 function setF(v){ fF=v; openMenu=""; render(); }
