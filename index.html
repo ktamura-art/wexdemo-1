@@ -119,6 +119,28 @@
   .denied .req { margin-top:16px; background:#0078d4; color:#fff; border:none; padding:8px 18px; border-radius:2px; font-size:13px; cursor:pointer; }
 
   .footnote { font-size:11.5px; color:#a19f9d; padding:14px 2px; }
+
+  /* ===== 解説オーバーレイ（?guide=1 または G キーで表示。既定は非表示） ===== */
+  body.guide { padding-bottom:142px; }
+  .g-badge { position:fixed; width:23px; height:23px; border-radius:50%; background:#d83b01;
+             color:#fff; font-size:12.5px; font-weight:700; line-height:23px; text-align:center;
+             z-index:9000; box-shadow:0 1px 4px rgba(0,0,0,.45); pointer-events:none;
+             font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif; }
+  .g-hl { outline:2px dashed #d83b01 !important; outline-offset:2px; }
+  .g-legend { position:fixed; left:0; right:0; bottom:0; z-index:9001; background:#fff;
+              border-top:2px solid #d83b01; box-shadow:0 -3px 14px rgba(0,0,0,.16); padding:11px 18px 13px; }
+  .g-legend .g-hd { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .g-legend .g-hd b { font-size:12.5px; color:#d83b01; letter-spacing:.02em; }
+  .g-legend .g-hd span { font-size:11px; color:#605e5c; }
+  .g-legend .g-x { margin-left:auto; font-size:11px; color:#605e5c; border:1px solid #d2d0ce;
+                   border-radius:2px; padding:2px 9px; cursor:pointer; background:#faf9f8; }
+  .g-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px 22px; }
+  .g-it { display:flex; gap:7px; align-items:flex-start; }
+  .g-it i { flex:none; width:18px; height:18px; border-radius:50%; background:#d83b01; color:#fff;
+            font-size:10.5px; font-weight:700; line-height:18px; text-align:center; font-style:normal; margin-top:1px; }
+  .g-it div { min-width:0; }
+  .g-it b { display:block; font-size:11.5px; color:#201f1e; line-height:1.45; }
+  .g-it p { margin:0; font-size:10.5px; color:#605e5c; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -492,7 +514,7 @@ function render(){
           </div>`:""}</th>
         <th>更新日時</th><th>更新者</th><th style="color:#0078d4">＋ 列の追加</th>
       </tr>
-      ${flds.map(fn=>`<tr class="row">
+      ${flds.map(fn=>`<tr class="row fld">
         <td class="sel"></td>
         <td><span class="fname"><span class="ficon" style="background:none;color:#ffb900;font-size:17px">📁</span>${fn}</span></td>
         <td></td><td></td><td class="muted">${site.dept}</td><td class="muted"></td>
@@ -516,6 +538,8 @@ function render(){
     <div class="ip-row"><div class="k">アイテム数</div><div class="v">${rows.length} 件</div></div>
     <div class="ip-row"><div class="k">サイト</div><div class="v">${site.name}</div></div>
     <div class="ip-row"><div class="k">更新日時</div><div class="v">2026年7月22日</div></div>`;
+
+  if (guideOn) requestAnimationFrame(drawGuide);
 }
 
 function selSite(id){ curSite=id; const vis=LIBS.filter(l=>l.site===id&&canSee(l)); const f=vis.find(l=>l.lv==="L3")||vis[0]; curLib=f?f.key:""; fF="";fY="";openMenu=""; document.getElementById("q").value=""; render(); }
@@ -525,6 +549,87 @@ function setF(v){ fF=v; openMenu=""; render(); }
 function setY(v){ fY=v; openMenu=""; render(); }
 function toggleInfo(){ infoOpen=!infoOpen; render(); }
 document.addEventListener("click", e=>{ if(!e.target.closest("th") && openMenu){ openMenu=""; render(); } });
+
+/* ============================================================
+   解説オーバーレイ
+   表示：URL に ?guide=1 を付ける／画面上で G キーを押す
+   非表示時は一切描画しないため、通常のデモ画面には影響しません
+   ============================================================ */
+const GUIDE = [
+  { n:"①", sel:".suite .brand", at:"r",
+    t:"Microsoft 365 スイートバー",
+    d:"SharePoint 共通のヘッダー。検索・通知・アカウント" },
+  { n:"②", sel:"#hubnav .hublink.on", at:"tl", hl:"#hubnav",
+    t:"業務区分サイト（第1階層）",
+    d:"13サイト。権限のないサイトはここに出ません" },
+  { n:"③", sel:".sh-row .sitetile", at:"l", hl:".sh-row",
+    t:"サイトヘッダー",
+    d:"開いているサイトと、アクセスできる人数" },
+  { n:"④", sel:"#quick .qi.on", at:"l", hl:"#quick",
+    t:"ライブラリ（第2階層）",
+    d:"業務カテゴリ単位。L4 は一般社員には出ません" },
+  { n:"⑤", sel:".doclist tr.fld td:nth-child(2)", at:"l",
+    t:"フォルダ（第3階層）",
+    d:"現行のフォルダ構成をそのまま反映" },
+  { n:"⑥", sel:".doclist th:nth-child(3)", at:"tl",
+    hlAll:".doclist th:nth-child(3),.doclist th:nth-child(4),.doclist th:nth-child(5),.doclist th:nth-child(6)",
+    t:"列（メタデータ）",
+    d:"F分類・機密レベル・主管部署・年度。▼で絞り込み" },
+  { n:"⑦", sel:".cmdbar", at:"l",
+    t:"コマンドバー",
+    d:"閲覧のみの権限では［新規］［アップロード］が出ません" },
+  { n:"⑧", sel:"#avatar", at:"l",
+    t:"表示ユーザー",
+    d:"クリックで切替。権限による見え方を比較できます" },
+];
+
+let guideOn = ["1","true","on"].includes((new URLSearchParams(location.search).get("guide")||"").toLowerCase());
+
+function toggleGuide(){ guideOn=!guideOn; drawGuide(); }
+
+let gBusy = false;
+function drawGuide(){
+  if (gBusy) return;
+  gBusy = true; try { drawGuideInner(); } finally { gBusy = false; }
+}
+function drawGuideInner(){
+  document.querySelectorAll(".g-badge,.g-legend").forEach(e=>e.remove());
+  document.querySelectorAll(".g-hl").forEach(e=>e.classList.remove("g-hl"));
+  document.body.classList.toggle("guide", guideOn);
+  if(!guideOn) return;
+
+  const lg = document.createElement("div");
+  lg.className = "g-legend";
+  lg.innerHTML = `<div class="g-hd"><b>画面の見方</b>
+      <span>サイト（業務区分）→ ライブラリ（業務カテゴリ）→ フォルダ の3階層です</span>
+      <span class="g-x" onclick="toggleGuide()">解説を閉じる（G キー）</span></div>
+    <div class="g-grid">${GUIDE.map(g=>
+      `<div class="g-it"><i>${g.n}</i><div><b>${g.t}</b><p>${g.d}</p></div></div>`).join("")}</div>`;
+  document.body.appendChild(lg);
+
+  GUIDE.forEach(g=>{
+    const el = document.querySelector(g.sel);
+    if(!el) return;
+    const tgt = (g.hlAll || g.hl) ? [...document.querySelectorAll(g.hlAll || g.hl)] : [el];
+    tgt.forEach(h=>h.classList.add("g-hl"));
+    const r = el.getBoundingClientRect();
+    if(r.width===0 && r.height===0) return;
+    const p = { tl:[r.left-11, r.top-11],
+                r :[r.right+7, r.top+r.height/2-11.5],
+                l :[r.left-30, r.top+r.height/2-11.5] }[g.at];
+    const b = document.createElement("div");
+    b.className = "g-badge"; b.textContent = g.n;
+    b.style.left = Math.max(2, p[0]) + "px";
+    b.style.top  = Math.max(2, p[1]) + "px";
+    document.body.appendChild(b);
+  });
+}
+
+document.addEventListener("keydown", e=>{
+  if((e.key==="g"||e.key==="G") && !/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) toggleGuide();
+});
+addEventListener("resize", drawGuide);
+addEventListener("scroll", drawGuide, true);
 
 onPersona();
 </script>
