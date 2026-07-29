@@ -539,7 +539,8 @@ function render(){
     <div class="ip-row"><div class="k">サイト</div><div class="v">${site.name}</div></div>
     <div class="ip-row"><div class="k">更新日時</div><div class="v">2026年7月22日</div></div>`;
 
-  if (guideOn) requestAnimationFrame(drawGuide);
+  /* 同期で描画（バックグラウンドのタブでは requestAnimationFrame が発火しないため） */
+  if (guideOn) drawGuide();
 }
 
 function selSite(id){ curSite=id; const vis=LIBS.filter(l=>l.site===id&&canSee(l)); const f=vis.find(l=>l.lv==="L3")||vis[0]; curLib=f?f.key:""; fF="";fY="";openMenu=""; document.getElementById("q").value=""; render(); }
