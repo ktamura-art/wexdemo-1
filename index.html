@@ -416,11 +416,18 @@ const shareOf = l => SHARE[l.key] || [ (SITES.find(x=>x.id===l.site)||{}).dept ]
 /* ペルソナ：ALL=全社管理者（全表示・構造レビュー用）。mgr=管理職、exec=全表示 */
 const PERSONA = {
   ALL:{ dept:"（全社管理者）", kobai:true, mgr:true, exec:true, av:"全", label:"全社管理者（全部署を表示）" },
-  L3:{ dept:"営業部",   kobai:true,  mgr:false, exec:false, av:"営", label:"営業部・一般社員（購買兼任）" },
-  L4:{ dept:"営業部",   kobai:true,  mgr:true,  exec:false, av:"管", label:"営業部・管理職" },
-  SVC:{dept:"サービス部",kobai:false, mgr:false, exec:false, av:"サ", label:"サービス部・一般社員" },
-  GYO:{dept:"業務部",   kobai:false, mgr:false, exec:false, av:"業", label:"業務部・一般社員" },
-  L5:{ dept:"営業部",   kobai:true,  mgr:true,  exec:true,  av:"役", label:"役員・個別指定" },
+  L3: { dept:"営業部",        kobai:true,  mgr:false, exec:false, av:"営", label:"営業部・一般社員（購買兼任）" },
+  L4: { dept:"営業部",        kobai:true,  mgr:true,  exec:false, av:"管", label:"営業部・管理職" },
+  GYO:{ dept:"業務部",        kobai:false, mgr:false, exec:false, av:"業", label:"業務部・一般社員" },
+  SEI:{ dept:"生産部",        kobai:false, mgr:false, exec:false, av:"生", label:"生産部・一般社員" },
+  SVC:{ dept:"サービス部",     kobai:false, mgr:false, exec:false, av:"サ", label:"サービス部・一般社員" },
+  KAN:{ dept:"管理本部",       kobai:false, mgr:false, exec:false, av:"管", label:"管理本部・一般社員" },
+  GIJ:{ dept:"技術部",        kobai:false, mgr:false, exec:false, av:"技", label:"技術部・一般社員" },
+  KOB:{ dept:"購買",          kobai:true,  mgr:false, exec:false, av:"購", label:"購買（横串・兼任者）" },
+  ISO:{ dept:"ISO管理室",      kobai:false, mgr:false, exec:false, av:"I", label:"ISO管理室・一般社員" },
+  KEI:{ dept:"経理部",        kobai:false, mgr:false, exec:false, av:"経", label:"経理部・一般社員" },
+  IT: { dept:"情報システム部",  kobai:false, mgr:false, exec:false, av:"情", label:"情報システム部・一般社員" },
+  L5: { dept:"営業部",        kobai:true,  mgr:true,  exec:true,  av:"役", label:"役員・個別指定" },
 };
 let curSite="sales", curLib="sales0", fF="", fY="", openMenu="", infoOpen=false;
 
@@ -439,7 +446,8 @@ function canSee(l){
   if (s.l5 || l.lv==="L5") return false;          // L5：対象者以外は存在も見えない（J-30/J-35）
   if (s.open || s.hub) return true;
   if (l.lv==="L2") return true;                   // L2＝全社閲覧
-  const inScope = shareOf(l).includes(p.dept) || (s.kobai && p.kobai);
+  const sc = shareOf(l);
+  const inScope = sc.includes("（全社）") || sc.includes(p.dept) || (s.kobai && p.kobai);
   if (l.lv==="L3") return inScope;                // L3＝公開範囲に含まれる部署
   if (l.lv==="L4") return inScope && p.mgr;       // L4＝そのうえで管理職のみ
   return false;
