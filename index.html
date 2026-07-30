@@ -371,12 +371,37 @@ const FILES = [
   ["arc","main","2015年度_旧営業報告.zip","fzip","F02","—","営業部","2015","—"],
 ];
 
-/* ペルソナ：ALL=全社管理者（全表示・構造レビュー用）。L3〜L5＝営業部（購買兼任）。mgr=管理職、exec=全表示 */
+/* ============================================================
+   公開範囲（SHARE）＝ ライブラリ（業務カテゴリ）ごとに、見せる部署を指定する
+   ここに定義がないライブラリは「主管部署のみ」が既定。
+   ※ 値は検討用の仮案。実際の範囲は御社にてご確定ください。
+   ============================================================ */
+const SHARE = {
+  // 顧客管理・営業
+  sales0: ["営業部", "サービス部", "業務部"],   // 顧客管理：現場も顧客情報を参照する
+  sales1: ["営業部"],                            // 新規：営業部内で完結
+  sales2: ["営業部", "業務部"],                  // 受発注：業務部が受注情報を使う
+  sales3: ["営業部"],                            // 管理業務（L4）
+  sales4: ["営業部"],                            // 教育・週報
+  sales5: ["営業部", "技術部"],                  // 新規開発室：技術部と連携
+  // リネンサプライ
+  linen0: ["業務部", "営業部"],                  // 受注
+  linen1: ["業務部", "購買"],                    // 発注
+  // 生産・品質
+  prod1:  ["生産部", "業務部"],                  // 生産実績
+  // ISO・認証管理
+  iso0:   ["ISO管理室", "生産部", "業務部"],     // 基準・ルール
+};
+const shareOf = l => SHARE[l.key] || [ (SITES.find(x=>x.id===l.site)||{}).dept ].filter(Boolean);
+
+/* ペルソナ：ALL=全社管理者（全表示・構造レビュー用）。mgr=管理職、exec=全表示 */
 const PERSONA = {
   ALL:{ dept:"（全社管理者）", kobai:true, mgr:true, exec:true, av:"全", label:"全社管理者（全部署を表示）" },
-  L3:{ dept:"営業部", kobai:true,  mgr:false, exec:false, av:"社", label:"営業部・一般社員（購買兼任）" },
-  L4:{ dept:"営業部", kobai:true,  mgr:true,  exec:false, av:"管", label:"営業部・管理職" },
-  L5:{ dept:"営業部", kobai:true,  mgr:true,  exec:true,  av:"役", label:"役員・個別指定" },
+  L3:{ dept:"営業部",   kobai:true,  mgr:false, exec:false, av:"営", label:"営業部・一般社員（購買兼任）" },
+  L4:{ dept:"営業部",   kobai:true,  mgr:true,  exec:false, av:"管", label:"営業部・管理職" },
+  SVC:{dept:"サービス部",kobai:false, mgr:false, exec:false, av:"サ", label:"サービス部・一般社員" },
+  GYO:{dept:"業務部",   kobai:false, mgr:false, exec:false, av:"業", label:"業務部・一般社員" },
+  L5:{ dept:"営業部",   kobai:true,  mgr:true,  exec:true,  av:"役", label:"役員・個別指定" },
 };
 let curSite="sales", curLib="sales0", fF="", fY="", openMenu="", infoOpen=false;
 
@@ -386,27 +411,31 @@ if(!PERSONA[curPersona]) curPersona = "ALL";
 const me = () => PERSONA[curPersona];
 const isMySite = s => s.dept===me().dept || (s.kobai && me().kobai);
 
-/* 見える／見えない（本番＝権限のないものはリンクごと非表示）。機密レベルはライブラリ単位 */
+/* 見える／見えない（本番＝権限のないものはリンクごと非表示）
+   7/30 御社ご指摘の反映：L3の判定を「部署が一致するか」から
+   「そのライブラリの公開範囲に自部署が含まれるか」へ変更（コンテンツ単位） */
 function canSee(l){
   const s = SITES.find(x=>x.id===l.site), p = me();
   if (p.exec) return true;
   if (s.l5 || l.lv==="L5") return false;          // L5：対象者以外は存在も見えない（J-30/J-35）
   if (s.open || s.hub) return true;
   if (l.lv==="L2") return true;                   // L2＝全社閲覧
-  const mine = s.dept===p.dept || (s.kobai && p.kobai);
-  if (l.lv==="L3") return mine;                   // L3＝自部署（購買は兼任横串）
-  if (l.lv==="L4") return mine && p.mgr;          // L4＝当該業務の管理職のみ
+  const inScope = shareOf(l).includes(p.dept) || (s.kobai && p.kobai);
+  if (l.lv==="L3") return inScope;                // L3＝公開範囲に含まれる部署
+  if (l.lv==="L4") return inScope && p.mgr;       // L4＝そのうえで管理職のみ
   return false;
 }
-/* 更新できるか（投稿）／閲覧のみ */
+/* 更新できるか（投稿）／閲覧のみ
+   公開範囲の先頭＝主管部署。主管部署は更新可、その他の部署は閲覧のみ */
+const ownerOf = l => shareOf(l)[0];
 function canEdit(l){
   const s = SITES.find(x=>x.id===l.site), p = me();
   if (s.ro) return false;
   if (s.open) return true;
   if (l.lv==="L5") return p.exec;
   if (l.lv==="L2") return s.dept===p.dept;
-  const mine = s.dept===p.dept || (s.kobai && p.kobai);
-  return mine && (l.lv!=="L4" || p.mgr);
+  const owner = ownerOf(l)===p.dept || (s.kobai && p.kobai);
+  return owner && (l.lv!=="L4" || p.mgr);
 }
 const siteVisible = s => LIBS.some(l=>l.site===s.id && canSee(l));
 
@@ -477,6 +506,8 @@ function render(){
   if(q) rows = rows.filter(f=>(f[2]+f[4]+f[6]).toLowerCase().includes(q));
   const flds = (!fF&&!fY&&!q) ? ((FOLDERS[curSite]||{})[lib.key]||[]) : [];
 
+  const shareTxt = shareOf(lib).join("・");
+
   main.innerHTML = `
     <div class="cmdbar">
       ${editable?`
@@ -505,7 +536,7 @@ function render(){
             ${fvals.map(v=>`<div class="cm" onclick="setF('${v}');event.stopPropagation()">${v===fF?"✓":"　"} ${v}</div>`).join("")}
           </div>`:""}</th>
         <th>機密レベル</th>
-        <th>主管部署</th>
+        <th>公開範囲</th>
         <th onclick="menu('y')" style="position:relative">年度 <span class="caret">▼</span>
           ${openMenu==="y"?`<div class="colmenu">
             <div class="cm muted">フィルター</div><div class="sep"></div>
@@ -517,15 +548,15 @@ function render(){
       ${flds.map(fn=>`<tr class="row fld">
         <td class="sel"></td>
         <td><span class="fname"><span class="ficon" style="background:none;color:#ffb900;font-size:17px">📁</span>${fn}</span></td>
-        <td></td><td></td><td class="muted">${site.dept}</td><td class="muted"></td>
-        <td class="muted">7月22日</td><td class="muted">${site.dept}</td><td></td>
+        <td></td><td></td><td class="muted">${shareTxt}</td><td class="muted"></td>
+        <td class="muted">7月22日</td><td class="muted">${ownerOf(lib)}</td><td></td>
       </tr>`).join("")}
       ${rows.map(f=>`<tr class="row">
         <td class="sel"></td>
         <td><span class="fname"><span class="ficon ${f[3]}">${{fx:"X",fw:"W",fp:"P",fpdf:"PDF",fmp4:"▶",fzip:"ZIP"}[f[3]]}</span>${f[2]}</span></td>
         <td><b>${f[4]}</b></td>
         <td><span class="pill pl-${f[5]==="—"?"X":f[5]}">${f[5]}</span></td>
-        <td class="muted">${f[6]}</td><td class="muted">${f[7]}</td>
+        <td class="muted">${shareTxt}</td><td class="muted">${f[7]}</td>
         <td class="muted">7月22日</td><td class="muted">${f[8]}</td><td></td>
       </tr>`).join("")}
     </table>`:`<div style="padding:40px;text-align:center;color:#a19f9d;font-size:13px">条件に一致するアイテムはありません</div>`}`;
@@ -537,6 +568,8 @@ function render(){
     <div class="ip-row"><div class="k">種類</div><div class="v">ドキュメント ライブラリ</div></div>
     <div class="ip-row"><div class="k">アイテム数</div><div class="v">${rows.length} 件</div></div>
     <div class="ip-row"><div class="k">サイト</div><div class="v">${site.name}</div></div>
+    <div class="ip-row"><div class="k">公開範囲</div><div class="v">${shareTxt}</div></div>
+    <div class="ip-row"><div class="k">更新できる部署</div><div class="v">${ownerOf(lib)}</div></div>
     <div class="ip-row"><div class="k">更新日時</div><div class="v">2026年7月22日</div></div>`;
 
   /* 同期で描画（バックグラウンドのタブでは requestAnimationFrame が発火しないため） */
@@ -575,7 +608,7 @@ const GUIDE = [
   { n:"⑥", sel:".doclist th:nth-child(3)", at:"tl",
     hlAll:".doclist th:nth-child(3),.doclist th:nth-child(4),.doclist th:nth-child(5),.doclist th:nth-child(6)",
     t:"列（メタデータ）",
-    d:"F分類・機密レベル・主管部署・年度。▼で絞り込み" },
+    d:"F分類・機密レベル・公開範囲・年度。▼で絞り込み" },
   { n:"⑦", sel:".cmdbar", at:"l",
     t:"コマンドバー",
     d:"閲覧のみの権限では［新規］［アップロード］が出ません" },
